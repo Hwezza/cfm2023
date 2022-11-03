@@ -1,7 +1,5 @@
 # Main File
-
 import Brain
-
 pyBrain = Brain.PyBrain
 
 # Menu
