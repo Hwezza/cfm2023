@@ -2,9 +2,9 @@
 
 Submission: 2023
 
-https://github.com/Hwezza/cfm2023
+<https://github.com/Hwezza/cfm2023>
 
-### Authors:    
+## Authors:
 
 Harrison Wescott
 
