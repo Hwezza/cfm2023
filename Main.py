@@ -1,6 +1,6 @@
 # Main File
 import Brain
-pyBrain = Brain.PyBrain
+pyBrain = Brain.PyBrain()
 
 # Menu
 print(pyBrain.running)
