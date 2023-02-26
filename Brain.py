@@ -8,6 +8,7 @@ class PyBrain:
     def option1_selected(self):
         print("open option1")
         gui.open_program1
+    
 
 
 class ParticleSimulation:
@@ -20,6 +21,11 @@ class ParticleSimulation:
         self.air_resistance = air_resistance
         self.air_density = air_density
         self.gravity = gravity
+    
+    #calculations:
+    ###
+
+
 '''
 req variables:
 Name
