@@ -1,17 +1,9 @@
 import numpy as np
+import Brain
+pyBrain = Brain.PyBrain()
 
-class ParticleSimulation:
-    #Establish Variables
-    def __init__(self, name, u, angle, mass, diam, air_resistance, air_density, gravity):
-        self.name = name
-        self.u = u
-        self.angle = angle
-        self.mass = mass
-        self.diam = diam
-        self.air_resistance = air_resistance
-        self.air_density = air_density
-        self.gravity = gravity
 
-particle1 = ParticleSimulation(name = 'one', u = 5, angle=1,mass=5,diam=5,air_resistance=0.5,air_density=1.28,gravity=9.8)
+particle1 = pyBrain.ParticleSimulation(name = 'one', u = 5, angle=1,mass=5,diam=5,air_resistance=0.5,air_density=1.28,gravity=9.8)
 
 print(particle1.name)
+
