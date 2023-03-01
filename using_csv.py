@@ -1,7 +1,11 @@
 import csv
-import pandas as pd
+data = []
+with open('cfmtestSpreadsheet.csv') as csv_file:
+    csv_read=csv.reader(csv_file, delimiter=',')
 
+    for line in csv_file:
+        data.append(line.strip().split(","))
 
-import pandas as pd
-data = pd.read_csv('cfmTestSpreadsheet.csv',sep=",")
-print(data)
+for line in data:
+    print(line)
+
