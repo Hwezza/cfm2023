@@ -14,7 +14,7 @@ def open_menu():
     main_window.mainloop()
 
 
-### Program 1 (Volumes of revolution?)
+### Program 1 (particleSim)
 def open_program1():
     program1_window = tkinter.Tk(screenName=None,  baseName=None,  className='Window',  useTk=1)
     program1_window.title("Particle Catapult")
