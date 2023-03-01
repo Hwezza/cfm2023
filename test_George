@@ -3,7 +3,9 @@ import Brain
 pyBrain = Brain.PyBrain()
 
 
-particle1 = pyBrain.ParticleSimulation(name = 'one', u = 1, angle=1,mass=5,diam=5,air_resistance=0.5,air_density=1.28,gravity=9.8)
+p1 = pyBrain.ParticleSimulation(name = 'one', u = 5, angle=1,mass=5,diam=5,air_resistance=0.5,air_density=1.28,gravity=9.8,x=3,z=4,xdot=5,xdotdot=5,zdot=6,zdotdot=6)
 
-print(particle1.name)
+print(p1.name)
 
+p1.mass * p1.xdotdot == (-p1.air_density * p1.air_resistance * np.pi * (p1.diam) ** 2 * 1/4) * np.sqrt(p1.xdot**2 + p1.zdot**2) * p1.xdot
+p1.mass * p1.zdotdot == (-p1.air_density * p1.air_resistance * np.pi * (p1.diam) ** 2 * 1/4) * np.sqrt(p1.xdot**2 + p1.zdot**2) * p1.zdot - (p1.mass*p1.gravity)
