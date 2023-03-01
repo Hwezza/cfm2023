@@ -25,7 +25,7 @@ def open_csv() -> list:
 
 class ParticleSimulation:
     #Establish Variables
-    def __init__(name, u, angle, mass, diam, air_resistance, air_density, gravity):
+    def __init__(self, name, u, angle, mass, diam, air_resistance, air_density, gravity):
         self.name = name
         self.u = u
         self.angle = angle
@@ -46,7 +46,6 @@ def import_experiments(raw_data) -> list:
                                                  diam = raw_data[i][4], air_resistance = raw_data[i][5], 
                                                  air_density = raw_data[i][6], gravity = raw_data[i][7]))
     return particle_list
-print(import_experiments(open_csv()))
 
 '''
 req variables:
