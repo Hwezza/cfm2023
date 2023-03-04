@@ -1,15 +1,17 @@
 import gui
 class PyBrain:
     running = True
-    
+    particle_list = []
+    raw_data = []
+
     def menu(self):
         gui.open_menu()
     
     def option1_selected(self):
-        print("open option1")
+        #print("open option1")
         gui.open_program1
     
-    def open_csv() -> list:
+    def open_csv(self):
         import csv
         data = []
         with open('cfmtestSpreadsheet.csv') as csv_file:
@@ -18,7 +20,7 @@ class PyBrain:
             for i in csv_file:
                 data.append(i.strip().split(","))
             
-        return data
+        self.raw_data = data
 
 
 
@@ -40,28 +42,16 @@ class PyBrain:
         #calculations:
         ###
 
-    def import_experiments(raw_data) -> list:
-        particle_list = []
+    def import_experiments(self):
+        raw_data = self.raw_data
+        print("Raw DATA:", raw_data)
         for i in range(len(raw_data)):
-            print(particle_list)
-            particle_list.append(ParticleSimulation(name = raw_data[i][0], u =raw_data[i][1], angle = raw_data[i][2], mass = raw_data[i][3],
-                                                    diam = raw_data[i][4], air_resistance = raw_data[i][5], 
-                                                    air_density = raw_data[i][6], gravity = raw_data[i][7]))
-        return particle_list
+            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], u =raw_data[i][1], 
+                                                            x = raw_data[i][2], z = raw_data[i][3],
+                                                            angle = raw_data[i][4], mass = raw_data[i][5],
+                                                            diam = raw_data[i][6], air_resistance = raw_data[i][7], 
+                                                            air_density = raw_data[i][8], gravity = raw_data[i][9]))
 
-    '''
-    req variables:
-    Name
-    u
-    Angle
-    Mass
-    Air resistance coeff
-    Air density
-    Gravity
-    '''
-
-    #testing
-    '''
-    brain = PyBrain()
-    brain.menu()
-    '''
+    def startup(self):
+        self.open_csv()
+        self.import_experiments()
