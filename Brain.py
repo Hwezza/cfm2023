@@ -88,12 +88,15 @@ class PyBrain:
         d = particle.air_density
         c = particle.air_resistance
 
-        
+
         ## to evaluate
-        '''
-        p1.xdotdot == (((-p1.air_density * p1.air_resistance * p1.crossSection) * np.sqrt(p1.xdot**2 + p1.zdot**2))/p1.mass) * p1.xdot
-        p1.zdotdot == (((-p1.air_density * p1.air_resistance * p1.crossSection) * np.sqrt(p1.xdot**2 + p1.zdot**2))/p1.mass) * p1.zdot - (p1.mass*p1.gravity)
-        '''
+        particle.a_x == (((-particle.air_density * particle.air_resistance * particle.crossSection)
+                               * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass) * particle.xdot
+        particle.a_z == ((((-particle.air_density * particle.air_resistance * particle.crossSection)
+                               * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass)* particle.zdot
+                                 - (particle.mass*particle.gravity))
+        
+
 
         showinfo(title='Object Picked', message=("Object picked:",particle.name))
 
