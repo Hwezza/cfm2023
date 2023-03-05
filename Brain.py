@@ -30,8 +30,9 @@ class PyBrain:
 
     class ParticleSimulation:
         #Establish Variables
-        def __init__(self, name, x, z, angle, mass, diam, air_resistance, air_density, gravity, xdot, xdotdot, zdot, zdotdot):
+        def __init__(self, name, u, x, z, angle, mass, diam, air_resistance, air_density, gravity, xdot, xdotdot, zdot, zdotdot):
             self.name = name
+            self.u = u
             self.x = x
             self.z = z
             self.angle = angle
@@ -53,7 +54,7 @@ class PyBrain:
         raw_data = self.raw_data
         print("Raw DATA:", raw_data)
         for i in range(1,len(raw_data)):
-            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], 
+            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], u = raw_data[i][1],
                                                             x = raw_data[i][2], z = raw_data[i][3],
                                                             angle = raw_data[i][4], mass = raw_data[i][5],
                                                             diam = raw_data[i][6], air_resistance = raw_data[i][7], 
@@ -68,14 +69,30 @@ class PyBrain:
     def calculateFor(self, number:int):
         results = []
         particle = self.particle_list[number]
-        '''
 
+        v0 = ((particle.x**2) * (particle.z**2))**(1/2)
+        theta0 = particle.angle
+        #starting coords
+        x0 = 0
+        z0 = 0
+
+        #starting velocities
+        v0_x = particle.x
+        v0_z = particle.z
+        u = np.hypot(v0_x, v0_z)
+
+        #particle dimensions/environment
         m = particle.mass
         g = particle.gravity
         crossSection = np.pi * (particle.diam/2)**2
-        p = particle.air_density
-        ## to complete
+        d = particle.air_density
+        c = particle.air_resistance
+        ## to evaluate
         '''
+        p1.mass * p1.xdotdot == (-p1.air_density * p1.air_resistance * np.pi * (p1.diam) ** 2 * 1/4) * np.sqrt(p1.xdot**2 + p1.zdot**2) * p1.xdot
+        p1.mass * p1.zdotdot == (-p1.air_density * p1.air_resistance * np.pi * (p1.diam) ** 2 * 1/4) * np.sqrt(p1.xdot**2 + p1.zdot**2) * p1.zdot - (p1.mass*p1.gravity)
+        '''
+
         showinfo(title='Object Picked', message=("Object picked:",particle.name))
 
         return results

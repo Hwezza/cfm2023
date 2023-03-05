@@ -1,3 +1,3 @@
-name,x,z,angle,mass,diam,air res,air dens,grav
-example 1,3,4,45,5,5,0.5,1.28,9.8
-example 2,3,4,45,5,5,0.5,1.28,9.8
+name,u,x,z,angle,mass,diam,air res,air dens,grav
+example 1,5,3,4,45,5,5,0.5,1.28,9.8
+example 2,5,3,4,45,5,5,0.5,1.28,9.8
