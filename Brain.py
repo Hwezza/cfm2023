@@ -87,6 +87,8 @@ class PyBrain:
         crossSection = np.pi * (particle.diam/2)**2
         d = particle.air_density
         c = particle.air_resistance
+
+        
         ## to evaluate
         '''
         p1.mass * p1.xdotdot == (-p1.air_density * p1.air_resistance * np.pi * (p1.diam) ** 2 * 1/4) * np.sqrt(p1.xdot**2 + p1.zdot**2) * p1.xdot
