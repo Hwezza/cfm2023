@@ -1,6 +1,6 @@
 import gui
 import numpy as np
-from tkinter.messagebox import showinfo
+from scipy.integrate import solve_ivp
 
 class PyBrain:
     running = True
@@ -30,7 +30,8 @@ class PyBrain:
 
     class ParticleSimulation:
         #Establish Variables
-        def __init__(self, name, u, x, z, angle, mass, diam, air_resistance, air_density, gravity, xdot, xdotdot, zdot, zdotdot):
+        drag_coeff = 0.47
+        def __init__(self, name: str, u: int, x:int, z:int, angle:int, mass:int, diam:int, air_resistance:int, air_density:int, gravity:int):
             self.name = name
             self.u = u
             self.x = x
@@ -41,10 +42,6 @@ class PyBrain:
             self.air_resistance = air_resistance
             self.air_density = air_density
             self.gravity = gravity
-            self.xdot = xdot
-            self.xdotdot = xdotdot
-            self.zdot = zdot
-            self.zdotdot = zdotdot
         
 
     
@@ -81,26 +78,38 @@ class PyBrain:
         v0_z = particle.z
         u = np.hypot(v0_x, v0_z)
 
+        # current variables
+        v_x = v0_x
+        v_z = v0_z
+
+
         #particle dimensions/environment
+        v: int
         m = particle.mass
         g = particle.gravity
         crossSection = np.pi * (particle.diam/2)**2
         d = particle.air_density
         c = particle.air_resistance
+        Cd = particle.drag_coeff
+        
 
 
         ## to evaluate
+        '''
         particle.a_x == (((-particle.air_density * particle.air_resistance * particle.crossSection)
                                * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass) * particle.xdot
         particle.a_z == ((((-particle.air_density * particle.air_resistance * particle.crossSection)
                                * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass)* particle.zdot
                                  - (particle.mass*particle.gravity))
-        
-
-
-        showinfo(title='Object Picked', message=("Object picked:",particle.name))
-
+        '''
         return results
+    '''
+    def speedsAndAccelerations(t, speeds):
+        self.particle.a_x = (-0.5 * Cd * d * crossSection * u *)
+
+        solution = solve_ivp()
+    '''
+
         ###
 
 mainBrain = PyBrain()
