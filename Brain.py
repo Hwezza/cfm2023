@@ -30,9 +30,8 @@ class PyBrain:
 
     class ParticleSimulation:
         #Establish Variables
-        def __init__(self, name, u, x, z, angle, mass, diam, air_resistance, air_density, gravity):
+        def __init__(self, name, x, z, angle, mass, diam, air_resistance, air_density, gravity):
             self.name = name
-            self.u = u
             self.x = x
             self.z = z
             self.angle = angle
@@ -50,7 +49,7 @@ class PyBrain:
         raw_data = self.raw_data
         print("Raw DATA:", raw_data)
         for i in range(1,len(raw_data)):
-            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], u =raw_data[i][1], 
+            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], 
                                                             x = raw_data[i][2], z = raw_data[i][3],
                                                             angle = raw_data[i][4], mass = raw_data[i][5],
                                                             diam = raw_data[i][6], air_resistance = raw_data[i][7], 
