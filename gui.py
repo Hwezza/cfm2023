@@ -39,7 +39,9 @@ class guibrain:
         print(selected_particle)
     
     def selected_experiment(self):
-        print(self.tree.selection()[0])
+        print("selection: ",self.tree.selection()[0])
+        from Brain import mainBrain
+        mainBrain.calculateFor(self.tree.selection()[0])
     
     def open_choice_window(self):
         from Brain import mainBrain
@@ -47,14 +49,21 @@ class guibrain:
         self.choiceWindow.title("Particle Simulation")
         self.choiceWindow.geometry("800x450")
 
-        column = ("experimentName")
-        print("columns =",column)
+        columns = (mainBrain.raw_data[0])
+        print("columns =",columns)
 
-        self.tree = ttk.Treeview(self.choiceWindow, columns=column, show='headings')
-        self.tree.heading('experimentName', text='Experiment Name')
+        self.tree = ttk.Treeview(self.choiceWindow, columns=columns, show='headings')
+        print(mainBrain.raw_data[0])
+        for heading in mainBrain.raw_data[0]:
+            self.tree.heading(heading, text=heading)
+            self.tree.column(heading, width = 50)
+        self.tree.column(mainBrain.raw_data[0][0], width = 100)
+
+
         i = 0
-        for experiment in mainBrain.particle_list:
-            self.tree.insert('', tkinter.END, values=(experiment.name, ),iid={i})
+        for experiment in mainBrain.raw_data[1:]:
+            print("experiment",i+1,":",experiment)
+            self.tree.insert('', tkinter.END, values=(experiment),iid={i})
             i+=1
 
         self.tree.grid(row=0, column=0, sticky='nsew')
@@ -65,7 +74,7 @@ class guibrain:
         scrollbar.grid(row=0, column=1, sticky='ns')
 
         start_button = tkinter.Button(self.choiceWindow, text = "Start!", width = 10, height = 5, command = self.selected_experiment, background="grey")
-        start_button.grid(row=0,column=1)
+        start_button.grid(row=1,column=0)
 
         self.choiceWindow.mainloop()
 

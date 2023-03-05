@@ -1,5 +1,5 @@
 import gui
-
+import numpy as np
 
 class PyBrain:
     running = True
@@ -41,11 +41,7 @@ class PyBrain:
             self.air_density = air_density
             self.gravity = gravity
         
-        #insert calculations:
-        def calculate():
 
-            return
-        ###
     
     particle_list: list[ParticleSimulation] = []
 
@@ -63,5 +59,20 @@ class PyBrain:
     def startup(self):
         self.open_csv()
         self.import_experiments()
+    
+    #insert calculations:
+    def calculateFor(self, number:int):
+        results = []
+        particle = self.particle_list[number]
+
+        m = particle.mass
+        g = particle.gravity
+        crossSection = np.pi * (particle.diam/2)**2
+        p = particle.air_density
+        ## to complete
+
+
+        return results
+        ###
 
 mainBrain = PyBrain()
