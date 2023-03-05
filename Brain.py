@@ -30,7 +30,7 @@ class PyBrain:
 
     class ParticleSimulation:
         #Establish Variables
-        def __init__(self, name, x, z, angle, mass, diam, air_resistance, air_density, gravity):
+        def __init__(self, name, x, z, angle, mass, diam, air_resistance, air_density, gravity, xdot, xdotdot, zdot, zdotdot):
             self.name = name
             self.x = x
             self.z = z
@@ -40,6 +40,10 @@ class PyBrain:
             self.air_resistance = air_resistance
             self.air_density = air_density
             self.gravity = gravity
+            self.xdot = xdot
+            self.xdotdot = xdotdot
+            self.zdot = zdot
+            self.zdotdot = zdotdot
         
 
     
