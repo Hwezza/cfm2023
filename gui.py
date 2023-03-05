@@ -41,7 +41,7 @@ class guibrain:
     def selected_experiment(self):
         print("selection: ",self.tree.selection()[0])
         from Brain import mainBrain
-        mainBrain.calculateFor(self.tree.selection()[0])
+        mainBrain.calculateFor(int(self.tree.selection()[0][1]))
     
     def open_choice_window(self):
         from Brain import mainBrain

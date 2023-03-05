@@ -1,5 +1,6 @@
 import gui
 import numpy as np
+from tkinter.messagebox import showinfo
 
 class PyBrain:
     running = True
@@ -64,13 +65,15 @@ class PyBrain:
     def calculateFor(self, number:int):
         results = []
         particle = self.particle_list[number]
+        '''
 
         m = particle.mass
         g = particle.gravity
         crossSection = np.pi * (particle.diam/2)**2
         p = particle.air_density
         ## to complete
-
+        '''
+        showinfo(title='Object Picked', message=("Object picked:",particle.name))
 
         return results
         ###
