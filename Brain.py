@@ -76,7 +76,7 @@ class PyBrain:
         #starting velocities
         v0_x = particle.x
         v0_z = particle.z
-        u = np.hypot(v0_x, v0_z)
+        general_speed = np.hypot(v0_x, v0_z)
 
         # current variables
         v_x = v0_x
@@ -91,8 +91,21 @@ class PyBrain:
         d = particle.air_density
         c = particle.air_resistance
         Cd = particle.drag_coeff
-        
 
+        starting_values = (0, v0_x, 0, v0_z)
+        
+        def speeds_calculation(t,u):
+                x = u[0]
+                v_x = u[1]
+                z = u[2]
+                v_z = u[3]
+
+                speed = np.hypot(v_x, v_z)
+                a_x = ((-0.5 * Cd * d * crossSection)/m) * speed * v_x
+                a_z = ((-0.5 * Cd * d * crossSection)/m) * speed * v_z - g
+                return (v_x, a_x, v_z, a_z)
+                
+        solve_ivp(speeds_calculation)
 
         ## to evaluate
         '''

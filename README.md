@@ -15,4 +15,7 @@ Calvin Pannokaran
 Toby Soden
 
 ## How to run:
-
+Insert data into cfmTestSpreadsheet.csv
+Run Program Main.py
+Select desired option
+Follow instructions to use
