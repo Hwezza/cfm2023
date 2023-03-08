@@ -32,16 +32,16 @@ class PyBrain:
         #Establish Variables
         drag_coeff = 0.47
         def __init__(self, name: str, u: int, x:int, z:int, angle:int, mass:int, diam:int, air_resistance:int, air_density:int, gravity:int):
-            self.name = name
-            self.u = u
-            self.x = x
-            self.z = z
-            self.angle = angle
-            self.mass = mass
-            self.diam = diam
-            self.air_resistance = air_resistance
-            self.air_density = air_density
-            self.gravity = gravity
+            self.name:str = name
+            self.u:int = u
+            self.x:int = x
+            self.z:int = z
+            self.angle:int = angle
+            self.mass:int = mass
+            self.diam:int = diam
+            self.air_resistance:int = air_resistance
+            self.air_density:int = air_density
+            self.gravity:int = gravity
         
 
     
@@ -51,11 +51,15 @@ class PyBrain:
         raw_data = self.raw_data
         print("Raw DATA:", raw_data)
         for i in range(1,len(raw_data)):
-            self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], u = raw_data[i][1],
-                                                            x = raw_data[i][2], z = raw_data[i][3],
-                                                            angle = raw_data[i][4], mass = raw_data[i][5],
-                                                            diam = raw_data[i][6], air_resistance = raw_data[i][7], 
-                                                            air_density = raw_data[i][8], gravity = raw_data[i][9]))
+            try:
+                self.particle_list.append(self.ParticleSimulation(name = raw_data[i][0], u = raw_data[i][1],
+                                                                x = raw_data[i][2], z = raw_data[i][3],
+                                                                angle = raw_data[i][4], mass = raw_data[i][5],
+                                                                diam = raw_data[i][6], air_resistance = raw_data[i][7], 
+                                                                air_density = raw_data[i][8], gravity = raw_data[i][9]))
+            except:
+                print('error with data line',i)
+    
         print("Particle LIST:",self.particle_list)
 
     def startup(self):
@@ -118,8 +122,10 @@ class PyBrain:
         
         solution = solve_ivp(speeds_calculation, (t0,tf), starting_values, dense_output=1, events=(hit_ground, z_max))
 
-        times = np.linspace(0, solution.t_events[0][0], )
-        return 
+        times = np.linspace(0, solution.t_events[0][0], 150)
+
+        solution_for_t = solution.solution_for_t(times)
+        return solution_for_t
 
 
         ## to evaluate
