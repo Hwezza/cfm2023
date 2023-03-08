@@ -1,0 +1,5 @@
+import numpy as np
+import Brain
+pybrain = Brain.mainBrain
+
+
