@@ -19,3 +19,5 @@ Insert data into cfmTestSpreadsheet.csv
 Run Program Main.py
 Select desired option
 Follow instructions to use
+
+## Full documentation:
