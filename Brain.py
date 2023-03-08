@@ -104,8 +104,23 @@ class PyBrain:
                 a_x = ((-0.5 * Cd * d * crossSection)/m) * speed * v_x
                 a_z = ((-0.5 * Cd * d * crossSection)/m) * speed * v_z - g
                 return (v_x, a_x, v_z, a_z)
-                
-        solve_ivp(speeds_calculation)
+            
+        (t0, tf) = 0, 120
+
+        def hit_ground(t, u):
+            return u[2]
+
+        hit_ground.terminal = True
+        hit_ground.driection = -1
+
+        def z_max(t,u):
+            return u[3]
+        
+        solution = solve_ivp(speeds_calculation, (t0,tf), starting_values, dense_output=1, events=(hit_ground, z_max))
+
+        times = np.linspace(0, solution.t_events[0][0], )
+        return 
+
 
         ## to evaluate
         '''
@@ -115,7 +130,7 @@ class PyBrain:
                                * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass)* particle.zdot
                                  - (particle.mass*particle.gravity))
         '''
-        return results
+
     '''
     def speedsAndAccelerations(t, speeds):
         self.particle.a_x = (-0.5 * Cd * d * crossSection * u *)
