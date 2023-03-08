@@ -1,6 +1,6 @@
 import numpy as np
 import Brain
-pyBrain = Brain.PyBrain()
+pyBrain = Brain.mainBrain
 
 
 p1 = pyBrain.ParticleSimulation(name = 'one', u = 5, angle=1,mass=5,diam=5,air_resistance=0.5,air_density=1.28,gravity=9.8,x=3,z=4,xdot=5,xdotdot=5,zdot=6,zdotdot=6)
