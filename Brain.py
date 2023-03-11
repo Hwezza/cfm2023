@@ -32,6 +32,7 @@ class PyBrain:
     class ParticleSimulation:
         #Establish Variables
         drag_coeff = 0.47
+        time_in_air, dist_travelled, time_to_max, max_z = "N/A", "N/A", "N/A", "N/A"
         def __init__(self, name: str, u, x, z, angle, mass, diam, air_resistance, air_density, gravity):
             self.name = str(name)
             self.u = float(u)
@@ -44,6 +45,12 @@ class PyBrain:
             self.air_density = float(air_density)
             self.gravity = float(gravity)
         
+        def updateResults(self, tx, dx ,tz ,dz):
+            self.time_in_air, self.dist_travelled, self.time_to_max, self.max_z = tx, dx ,tz ,dz
+        def getData(self) -> list:
+            return [self.name,self.u,self.x,self.z,self.angle,self.mass,
+                    self.diam,self.air_resistance,self.air_density,self.gravity,
+                    self.time_in_air, self.max_z]
 
     
     particle_list: list[ParticleSimulation] = []
@@ -133,7 +140,7 @@ class PyBrain:
 
         solution_for_t = solution.sol(t)
         print("Returned SOLUTION :",solution_for_t)
-        return solution_for_t
+        return solution, solution_for_t
 
 
         ## to evaluate

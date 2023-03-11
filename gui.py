@@ -40,26 +40,38 @@ class guibrain:
         selected_particle = mainBrain.particle_list[number]
         print(selected_particle)
     
+    def write_experiments_to_tree(self):
+        from Brain import mainBrain
+        print("Writting to tree:")
+        print(mainBrain.particle_list)
+        self.tree.delete(*self.tree.get_children())
+        i = 0
+        for experiment in mainBrain.particle_list:
+            print("experiment",i+1,":",experiment.name)
+            self.tree.insert('', tkinter.END, values=(experiment.getData()),iid={i})
+            i+=1  
     #click
     def selected_experiment(self):
         print("selection: ",self.tree.selection()[0])
         from Brain import mainBrain
         result = mainBrain.calculateFor(int(self.tree.selection()[0][1]))
-        x = result[0]
-        z = result[2]
+        x = result[1][0]
+        z = result[1][2]
         print("graphing")
         mtplt.use('TkAgg')
         mtplt.pyplot.plot(x,z)
+        print("Update Results:")
+        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(x[-1], result[0].t_events[0][0], max(z), result[0].t_events[1][0])
+        print("results updated")
+        self.write_experiments_to_tree()
+        print("Written to tree")
         mtplt.pyplot.show()
         print("graph displayed")
-        
-    
-    def open_choice_window(self):
-        from Brain import mainBrain
-        self.choiceWindow = tkinter.Tk(screenName=None,  baseName=None,  className='Window',  useTk=1)
-        self.choiceWindow.title("Particle Simulation")
-        self.choiceWindow.geometry("800x450")
 
+        
+    def write_tree_headings(self):
+        from Brain import mainBrain
+        mainBrain.raw_data[0] += ["Time in Air", "Max Height"]
         columns = (mainBrain.raw_data[0])
         print("columns =",columns)
 
@@ -69,13 +81,14 @@ class guibrain:
             self.tree.heading(heading, text=heading)
             self.tree.column(heading, width = 50)
         self.tree.column(mainBrain.raw_data[0][0], width = 100)
+    
+    def open_choice_window(self):
+        self.choiceWindow = tkinter.Tk(screenName=None,  baseName=None,  className='Window',  useTk=1)
+        self.choiceWindow.title("Particle Simulation")
+        self.choiceWindow.geometry("800x450")
 
-
-        i = 0
-        for experiment in mainBrain.raw_data[1:]:
-            print("experiment",i+1,":",experiment)
-            self.tree.insert('', tkinter.END, values=(experiment),iid={i})
-            i+=1
+        self.write_tree_headings()
+        self.write_experiments_to_tree()
 
         self.tree.grid(row=0, column=0, sticky='nsew')
 
