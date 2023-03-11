@@ -1,5 +1,7 @@
 import tkinter
 from tkinter import ttk
+import matplotlib as mtplt
+
 
 ### Main window
 class guibrain:
@@ -38,10 +40,19 @@ class guibrain:
         selected_particle = mainBrain.particle_list[number]
         print(selected_particle)
     
+    #click
     def selected_experiment(self):
         print("selection: ",self.tree.selection()[0])
         from Brain import mainBrain
-        mainBrain.calculateFor(int(self.tree.selection()[0][1]))
+        result = mainBrain.calculateFor(int(self.tree.selection()[0][1]))
+        x = result[0]
+        z = result[2]
+        print("graphing")
+        mtplt.use('TkAgg')
+        mtplt.pyplot.plot(x,z)
+        mtplt.pyplot.show()
+        print("graph displayed")
+        
     
     def open_choice_window(self):
         from Brain import mainBrain
