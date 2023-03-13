@@ -45,7 +45,7 @@ class PyBrain:
             self.air_density = float(air_density)
             self.gravity = float(gravity)
         
-        def updateResults(self, tx, dx ,tz ,dz):
+        def updateResults(self, tx, dx ,dz ,tz):
             self.time_in_air, self.dist_travelled, self.time_to_max, self.max_z = tx, dx ,tz ,dz
         def getData(self) -> list:
             return [self.name,self.u,self.x,self.z,self.angle,self.mass,
