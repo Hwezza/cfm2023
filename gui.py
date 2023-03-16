@@ -61,7 +61,7 @@ class guibrain:
         mtplt.use('TkAgg')
         mtplt.pyplot.plot(x,z)
         print("Update Results:")
-        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(x[-1], result[0].t_events[0][0], max(z), result[0].t_events[1][0])
+        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(dx = x[-1], tx = result[0].t_events[0][0], dz = max(z), tz = result[0].t_events[1][0])
         print("results updated")
         self.write_experiments_to_tree()
         print("Written to tree")
@@ -90,15 +90,16 @@ class guibrain:
         self.write_tree_headings()
         self.write_experiments_to_tree()
 
-        self.tree.grid(row=0, column=0, sticky='nsew')
+        #self.tree.grid(row=0, column=0, sticky='nsew')
 
 
         scrollbar = ttk.Scrollbar(self.choiceWindow, orient=tkinter.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscroll=scrollbar.set)
-        scrollbar.grid(row=0, column=1, sticky='ns')
+        scrollbar.pack(fill="y")
+        self.tree.pack(fill="x")
 
         start_button = tkinter.Button(self.choiceWindow, text = "Start!", width = 10, height = 5, command = self.selected_experiment, background="grey")
-        start_button.grid(row=1,column=0)
+        start_button.pack(fill="x")
 
         self.choiceWindow.mainloop()
 
