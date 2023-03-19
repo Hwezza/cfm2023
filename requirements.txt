@@ -1,6 +1,7 @@
 numpy
 matplotlib
 matplotlib-inline
+scipy
 
 
 # pip install -r requirements.txt

@@ -1,5 +1,11 @@
 import sys
-sys.path.insert(1, 'lib')
+from sys import platform
+if platform == "darwin":
+    # OS X
+    sys.path.insert(1, 'macLib')
+elif platform == "win32":
+    # Windows
+    sys.path.insert(1, 'winLibib')
 import matplotlib as mtplt
 from matplotlib import pyplot
 import tkinter
