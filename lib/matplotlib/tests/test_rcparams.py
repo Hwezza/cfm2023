@@ -1,6 +1,7 @@
 import copy
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from unittest import mock
@@ -229,8 +230,6 @@ def generate_validator_testcases(valid):
                      ),
          'fail': ((set(), ValueError),
                   (1, ValueError),
-                  ((1, 2), _api.MatplotlibDeprecationWarning),
-                  (np.array([1, 2]), _api.MatplotlibDeprecationWarning),
                   )
          },
         {'validator': _listify_validator(validate_int, n=2),
@@ -543,7 +542,7 @@ def test_backend_fallback_headful(tmpdir):
          "sentinel = mpl.rcsetup._auto_backend_sentinel; "
          # Check that access on another instance does not resolve the sentinel.
          "assert mpl.RcParams({'backend': sentinel})['backend'] == sentinel; "
-         "assert dict.__getitem__(mpl.rcParams, 'backend') == sentinel; "
+         "assert mpl.rcParams._get('backend') == sentinel; "
          "import matplotlib.pyplot; "
          "print(matplotlib.get_backend())"],
         env=env, universal_newlines=True)
@@ -591,3 +590,10 @@ def test_deprecation(monkeypatch):
     # Note that the warning suppression actually arises from the
     # iteration over the updater rcParams being protected by
     # suppress_matplotlib_deprecation_warning, rather than any explicit check.
+
+
+def test_rcparams_legend_loc():
+    value = (0.9, .7)
+    match_str = f"{value} is not a valid value for legend.loc;"
+    with pytest.raises(ValueError, match=re.escape(match_str)):
+        mpl.RcParams({'legend.loc': value})

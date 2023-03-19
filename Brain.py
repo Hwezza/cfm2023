@@ -1,7 +1,11 @@
+import sys
+sys.path.insert(1, 'lib')
+
 import gui
 import numpy as np
+
+import lib
 from scipy.integrate import solve_ivp
-from matplotlib import pyplot
 
 class PyBrain:
     running = True

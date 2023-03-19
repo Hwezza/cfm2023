@@ -107,15 +107,15 @@ Most of the date tickers can locate single or multiple values.  For example::
     # import constants for the days of the week
     from matplotlib.dates import MO, TU, WE, TH, FR, SA, SU
 
-    # tick on mondays every week
+    # tick on Mondays every week
     loc = WeekdayLocator(byweekday=MO, tz=tz)
 
-    # tick on mondays and saturdays
+    # tick on Mondays and Saturdays
     loc = WeekdayLocator(byweekday=(MO, SA))
 
 In addition, most of the constructors take an interval argument::
 
-    # tick on mondays every second week
+    # tick on Mondays every second week
     loc = WeekdayLocator(byweekday=MO, interval=2)
 
 The rrule locator allows completely general date ticking::
@@ -150,9 +150,9 @@ The available date tickers are:
 * `AutoDateLocator`: On autoscale, this class picks the best `DateLocator`
   (e.g., `RRuleLocator`) to set the view limits and the tick locations.  If
   called with ``interval_multiples=True`` it will make ticks line up with
-  sensible multiples of the tick intervals.  E.g. if the interval is 4 hours,
-  it will pick hours 0, 4, 8, etc as ticks.  This behaviour is not guaranteed
-  by default.
+  sensible multiples of the tick intervals.  For example, if the interval is
+  4 hours, it will pick hours 0, 4, 8, etc. as ticks.  This behaviour is not
+  guaranteed by default.
 
 Date formatters
 ---------------
@@ -187,10 +187,9 @@ import matplotlib as mpl
 from matplotlib import _api, cbook, ticker, units
 
 __all__ = ('datestr2num', 'date2num', 'num2date', 'num2timedelta', 'drange',
-           'epoch2num', 'num2epoch', 'set_epoch', 'get_epoch', 'DateFormatter',
-           'ConciseDateFormatter', 'AutoDateFormatter',
-           'DateLocator', 'RRuleLocator', 'AutoDateLocator', 'YearLocator',
-           'MonthLocator', 'WeekdayLocator',
+           'set_epoch', 'get_epoch', 'DateFormatter', 'ConciseDateFormatter',
+           'AutoDateFormatter', 'DateLocator', 'RRuleLocator',
+           'AutoDateLocator', 'YearLocator', 'MonthLocator', 'WeekdayLocator',
            'DayLocator', 'HourLocator', 'MinuteLocator',
            'SecondLocator', 'MicrosecondLocator',
            'rrule', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU',
@@ -203,10 +202,22 @@ _log = logging.getLogger(__name__)
 UTC = datetime.timezone.utc
 
 
+@_api.caching_module_getattr
+class __getattr__:
+    JULIAN_OFFSET = _api.deprecated("3.7")(property(lambda self: 1721424.5))
+    # Julian date at 0000-12-31
+    # note that the Julian day epoch is achievable w/
+    # np.datetime64('-4713-11-24T12:00:00'); datetime64 is proleptic
+    # Gregorian and BC has a one-year offset.  So
+    # np.datetime64('0000-12-31') - np.datetime64('-4713-11-24T12:00') =
+    # 1721424.5
+    # Ref: https://en.wikipedia.org/wiki/Julian_day
+
+
 def _get_tzinfo(tz=None):
     """
-    Generate tzinfo from a string or return tzinfo. If None,
-    retrieve the preferred timezone from the rcParams dictionary.
+    Generate `~datetime.tzinfo` from a string or return `~datetime.tzinfo`.
+    If None, retrieve the preferred timezone from the rcParams dictionary.
     """
     if tz is None:
         tz = mpl.rcParams['timezone']
@@ -226,12 +237,6 @@ def _get_tzinfo(tz=None):
 # Time-related constants.
 EPOCH_OFFSET = float(datetime.datetime(1970, 1, 1).toordinal())
 # EPOCH_OFFSET is not used by matplotlib
-JULIAN_OFFSET = 1721424.5  # Julian date at 0000-12-31
-# note that the Julian day epoch is achievable w/
-# np.datetime64('-4713-11-24T12:00:00'); datetime64 is proleptic
-# Gregorian and BC has a one-year offset.  So
-# np.datetime64('0000-12-31') - np.datetime64('-4713-11-24T12:00') = 1721424.5
-# Ref: https://en.wikipedia.org/wiki/Julian_day
 MICROSECONDLY = SECONDLY + 1
 HOURS_PER_DAY = 24.
 MIN_PER_HOUR = 60.
@@ -315,10 +320,10 @@ def get_epoch():
 
 def _dt64_to_ordinalf(d):
     """
-    Convert `numpy.datetime64` or an ndarray of those types to Gregorian
-    date as UTC float relative to the epoch (see `.get_epoch`).  Roundoff
-    is float64 precision.  Practically: microseconds for dates between
-    290301 BC, 294241 AD, milliseconds for larger dates
+    Convert `numpy.datetime64` or an `numpy.ndarray` of those types to
+    Gregorian date as UTC float relative to the epoch (see `.get_epoch`).
+    Roundoff is float64 precision.  Practically: microseconds for dates
+    between 290301 BC, 294241 AD, milliseconds for larger dates
     (see `numpy.datetime64`).
     """
 
@@ -439,7 +444,10 @@ def date2num(d):
     if not iterable:
         d = [d]
 
+    masked = np.ma.is_masked(d)
+    mask = np.ma.getmask(d)
     d = np.asarray(d)
+
     # convert to datetime64 arrays, if not already:
     if not np.issubdtype(d.dtype, np.datetime64):
         # datetime arrays
@@ -453,11 +461,13 @@ def date2num(d):
             d = np.asarray(d)
         d = d.astype('datetime64[us]')
 
+    d = np.ma.masked_array(d, mask=mask) if masked else d
     d = _dt64_to_ordinalf(d)
 
     return d if iterable else d[0]
 
 
+@_api.deprecated("3.7")
 def julian2num(j):
     """
     Convert a Julian date (or sequence) to a Matplotlib date (or sequence).
@@ -477,10 +487,11 @@ def julian2num(j):
     ep0 = np.datetime64('0000-12-31T00:00:00', 'h').astype(float) / 24.
     # Julian offset defined above is relative to 0000-12-31, but we need
     # relative to our current epoch:
-    dt = JULIAN_OFFSET - ep0 + ep
+    dt = __getattr__("JULIAN_OFFSET") - ep0 + ep
     return np.subtract(j, dt)  # Handles both scalar & nonscalar j.
 
 
+@_api.deprecated("3.7")
 def num2julian(n):
     """
     Convert a Matplotlib date (or sequence) to a Julian date (or sequence).
@@ -499,7 +510,7 @@ def num2julian(n):
     ep0 = np.datetime64('0000-12-31T00:00:00', 'h').astype(float) / 24.
     # Julian offset defined above is relative to 0000-12-31, but we need
     # relative to our current epoch:
-    dt = JULIAN_OFFSET - ep0 + ep
+    dt = __getattr__("JULIAN_OFFSET") - ep0 + ep
     return np.add(n, dt)  # Handles both scalar & nonscalar j.
 
 
@@ -1423,7 +1434,7 @@ class AutoDateLocator(DateLocator):
 
         # Loop over all the frequencies and try to find one that gives at
         # least a minticks tick positions.  Once this is found, look for
-        # an interval from an list specific to that frequency that gives no
+        # an interval from a list specific to that frequency that gives no
         # more than maxticks tick positions. Also, set up some ranges
         # (bymonth, etc.) as appropriate to be passed to rrulewrapper.
         for i, (freq, num) in enumerate(zip(self._freqs, nums)):
@@ -1657,7 +1668,7 @@ class MinuteLocator(RRuleLocator):
         Parameters
         ----------
         byminute : int or list of int, default: all minutes
-            Ticks will be placed on every minutes in *byminutes*. Default is
+            Ticks will be placed on every minute in *byminute*. Default is
             ``byminute=range(60)``, i.e., every minute.
         interval : int, default: 1
             The interval between each iteration. For example, if
@@ -1737,16 +1748,6 @@ class MicrosecondLocator(DateLocator):
         self._wrapped_locator.set_axis(axis)
         return super().set_axis(axis)
 
-    @_api.deprecated("3.5", alternative="`.Axis.set_view_interval`")
-    def set_view_interval(self, vmin, vmax):
-        self._wrapped_locator.set_view_interval(vmin, vmax)
-        return super().set_view_interval(vmin, vmax)
-
-    @_api.deprecated("3.5", alternative="`.Axis.set_data_interval`")
-    def set_data_interval(self, vmin, vmax):
-        self._wrapped_locator.set_data_interval(vmin, vmax)
-        return super().set_data_interval(vmin, vmax)
-
     def __call__(self):
         # if no data have been set, this will tank with a ValueError
         try:
@@ -1776,52 +1777,6 @@ class MicrosecondLocator(DateLocator):
     def _get_interval(self):
         # docstring inherited
         return self._interval
-
-
-@_api.deprecated(
-    "3.5",
-    alternative="``[date2num(datetime.utcfromtimestamp(t)) for t in e]`` or "
-                "numpy.datetime64 types")
-def epoch2num(e):
-    """
-    Convert UNIX time to days since Matplotlib epoch.
-
-    Parameters
-    ----------
-    e : list of floats
-        Time in seconds since 1970-01-01.
-
-    Returns
-    -------
-    `numpy.array`
-        Time in days since Matplotlib epoch (see `~.dates.get_epoch()`).
-    """
-
-    dt = (np.datetime64('1970-01-01T00:00:00', 's') -
-          np.datetime64(get_epoch(), 's')).astype(float)
-
-    return (dt + np.asarray(e)) / SEC_PER_DAY
-
-
-@_api.deprecated("3.5", alternative="`num2date(e).timestamp()<.num2date>`")
-def num2epoch(d):
-    """
-    Convert days since Matplotlib epoch to UNIX time.
-
-    Parameters
-    ----------
-    d : list of floats
-        Time in days since Matplotlib epoch (see `~.dates.get_epoch()`).
-
-    Returns
-    -------
-    `numpy.array`
-        Time in seconds since 1970-01-01.
-    """
-    dt = (np.datetime64('1970-01-01T00:00:00', 's') -
-          np.datetime64(get_epoch(), 's')).astype(float)
-
-    return np.asarray(d) * SEC_PER_DAY - dt
 
 
 @_api.deprecated("3.6", alternative="`AutoDateLocator` and `AutoDateFormatter`"
@@ -1873,7 +1828,7 @@ class DateConverter(units.ConversionInterface):
     Converter for `datetime.date` and `datetime.datetime` data, or for
     date/time data represented as it would be converted by `date2num`.
 
-    The 'unit' tag for such data is None or a tzinfo instance.
+    The 'unit' tag for such data is None or a `~datetime.tzinfo` instance.
     """
 
     def __init__(self, *, interval_multiples=True):
@@ -1884,7 +1839,7 @@ class DateConverter(units.ConversionInterface):
         """
         Return the `~matplotlib.units.AxisInfo` for *unit*.
 
-        *unit* is a tzinfo instance or None.
+        *unit* is a `~datetime.tzinfo` instance or None.
         The *axis* argument is required but not used.
         """
         tz = unit
@@ -1911,7 +1866,8 @@ class DateConverter(units.ConversionInterface):
     @staticmethod
     def default_units(x, axis):
         """
-        Return the tzinfo instance of *x* or of its first element, or None
+        Return the `~datetime.tzinfo` instance of *x* or of its first element,
+        or None
         """
         if isinstance(x, np.ndarray):
             x = x.ravel()

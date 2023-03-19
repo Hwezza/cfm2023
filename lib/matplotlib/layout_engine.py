@@ -5,9 +5,10 @@ Figures have a ``layout_engine`` property that holds a subclass of
 `~.LayoutEngine` defined here (or *None* for no layout).  At draw time
 ``figure.get_layout_engine().execute()`` is called, the goal of which is
 usually to rearrange Axes on the figure to produce a pleasing layout. This is
-like a ``draw`` callback, however when printing we disable the layout engine
-for the final draw and it is useful to know the layout engine while the figure
-is being created, in particular to deal with colorbars.
+like a ``draw`` callback but with two differences.  First, when printing we
+disable the layout engine for the final draw. Second, it is useful to know the
+layout engine while the figure is being created.  In particular, colorbars are
+made differently with different layout engines (for historical reasons).
 
 Matplotlib supplies two layout engines, `.TightLayoutEngine` and
 `.ConstrainedLayoutEngine`.  Third parties can create their own layout engine
@@ -17,7 +18,6 @@ by subclassing `.LayoutEngine`.
 from contextlib import nullcontext
 
 import matplotlib as mpl
-import matplotlib._api as _api
 
 from matplotlib._constrained_layout import do_constrained_layout
 from matplotlib._tight_layout import (get_subplotspec_list,
@@ -55,7 +55,7 @@ class LayoutEngine:
     3. override `LayoutEngine.execute` with your implementation
 
     """
-    # override these is sub-class
+    # override these in subclass
     _adjust_compatible = None
     _colorbar_gridspec = None
 
@@ -104,7 +104,7 @@ class PlaceHolderLayoutEngine(LayoutEngine):
     """
     This layout engine does not adjust the figure layout at all.
 
-    The purpose of this `.LayoutEngine` is to act as a place holder when the
+    The purpose of this `.LayoutEngine` is to act as a placeholder when the
     user removes a layout engine to ensure an incompatible `.LayoutEngine` can
     not be set later.
 
@@ -167,18 +167,16 @@ class TightLayoutEngine(LayoutEngine):
         ----------
         fig : `.Figure` to perform layout on.
 
-        See also: `.figure.Figure.tight_layout` and `.pyplot.tight_layout`.
+        See Also
+        --------
+        .figure.Figure.tight_layout
+        .pyplot.tight_layout
         """
         info = self._params
-        subplotspec_list = get_subplotspec_list(fig.axes)
-        if None in subplotspec_list:
-            _api.warn_external("This figure includes Axes that are not "
-                               "compatible with tight_layout, so results "
-                               "might be incorrect.")
         renderer = fig._get_renderer()
         with getattr(renderer, "_draw_disabled", nullcontext)():
             kwargs = get_tight_layout_figure(
-                fig, fig.axes, subplotspec_list, renderer,
+                fig, fig.axes, get_subplotspec_list(fig.axes), renderer,
                 pad=info['pad'], h_pad=info['h_pad'], w_pad=info['w_pad'],
                 rect=info['rect'])
         if kwargs:

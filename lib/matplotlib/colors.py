@@ -403,8 +403,8 @@ def to_rgba_array(c, alpha=None):
     Parameters
     ----------
     c : Matplotlib color or array of colors
-        If *c* is a masked array, an ndarray is returned with a (0, 0, 0, 0)
-        row for each masked value or row in *c*.
+        If *c* is a masked array, an `~numpy.ndarray` is returned with a
+        (0, 0, 0, 0) row for each masked value or row in *c*.
 
     alpha : float or sequence of floats, optional
         If *alpha* is given, force the alpha value of the returned RGBA tuple
@@ -515,7 +515,7 @@ def to_hex(c, keep_alpha=False):
     c = to_rgba(c)
     if not keep_alpha:
         c = c[:3]
-    return "#" + "".join(format(int(round(val * 255)), "02x") for val in c)
+    return "#" + "".join(format(round(val * 255), "02x") for val in c)
 
 
 ### Backwards-compatible color-conversion API
@@ -663,7 +663,7 @@ class Colormap:
         name : str
             The name of the colormap.
         N : int
-            The number of rgb quantization levels.
+            The number of RGB quantization levels.
         """
         self.name = name
         self.N = int(N)  # ensure that N is always int
@@ -684,11 +684,11 @@ class Colormap:
         """
         Parameters
         ----------
-        X : float or int, ndarray or scalar
+        X : float or int, `~numpy.ndarray` or scalar
             The data value(s) to convert to RGBA.
-            For floats, X should be in the interval ``[0.0, 1.0]`` to
+            For floats, *X* should be in the interval ``[0.0, 1.0]`` to
             return the RGBA values ``X*100`` percent along the Colormap line.
-            For integers, X should be in the interval ``[0, Colormap.N)`` to
+            For integers, *X* should be in the interval ``[0, Colormap.N)`` to
             return RGBA values *indexed* from the Colormap with index ``X``.
         alpha : float or array-like or None
             Alpha must be a scalar between 0 and 1, a sequence of such
@@ -715,16 +715,17 @@ class Colormap:
         if not xa.dtype.isnative:
             xa = xa.byteswap().newbyteorder()  # Native byteorder is faster.
         if xa.dtype.kind == "f":
-            with np.errstate(invalid="ignore"):
-                xa *= self.N
-                # Negative values are out of range, but astype(int) would
-                # truncate them towards zero.
-                xa[xa < 0] = -1
-                # xa == 1 (== N after multiplication) is not out of range.
-                xa[xa == self.N] = self.N - 1
-                # Avoid converting large positive values to negative integers.
-                np.clip(xa, -1, self.N, out=xa)
-                xa = xa.astype(int)
+            xa *= self.N
+            # Negative values are out of range, but astype(int) would
+            # truncate them towards zero.
+            xa[xa < 0] = -1
+            # xa == 1 (== N after multiplication) is not out of range.
+            xa[xa == self.N] = self.N - 1
+            # Avoid converting large positive values to negative integers.
+            np.clip(xa, -1, self.N, out=xa)
+        with np.errstate(invalid="ignore"):
+            # We need this cast for unsigned ints as well as floats
+            xa = xa.astype(int)
         # Set the over-range indices before the under-range;
         # otherwise the under-range values get converted to over-range.
         xa[xa > self.N - 1] = self._i_over
@@ -1039,7 +1040,7 @@ class LinearSegmentedColormap(Colormap):
             If (value, color) pairs are given, the mapping is from *value*
             to *color*. This can be used to divide the range unevenly.
         N : int
-            The number of rgb quantization levels.
+            The number of RGB quantization levels.
         gamma : float
         """
         if not np.iterable(colors):
@@ -1120,7 +1121,7 @@ class ListedColormap(Colormap):
     ----------
     colors : list, array
         List of Matplotlib color specifications, or an equivalent Nx3 or Nx4
-        floating point array (*N* rgb or rgba values).
+        floating point array (*N* RGB or RGBA values).
     name : str, optional
         String to identify the colormap.
     N : int, optional
@@ -1320,7 +1321,7 @@ class Normalize:
         ----------
         value
             Data to normalize.
-        clip : bool
+        clip : bool, optional
             If ``None``, defaults to ``self.clip`` (which defaults to
             ``False``).
 
@@ -1371,9 +1372,12 @@ class Normalize:
 
     def autoscale(self, A):
         """Set *vmin*, *vmax* to min, max of *A*."""
-        A = np.asanyarray(A)
-        self.vmin = A.min()
-        self.vmax = A.max()
+        with self.callbacks.blocked():
+            # Pause callbacks while we are updating so we only get
+            # a single update signal at the end
+            self.vmin = self.vmax = None
+            self.autoscale_None(A)
+        self._changed()
 
     def autoscale_None(self, A):
         """If vmin or vmax are not set, use the min/max of *A* to set them."""
@@ -1452,7 +1456,7 @@ class TwoSlopeNorm(Normalize):
 
     def __call__(self, value, clip=None):
         """
-        Map value to the interval [0, 1]. The clip argument is unused.
+        Map value to the interval [0, 1]. The *clip* argument is unused.
         """
         result, is_scalar = self.process_value(value)
         self.autoscale_None(result)  # sets self.vmin, self.vmax if None
@@ -1501,6 +1505,10 @@ class CenteredNorm(Normalize):
             *vcenter* + *halfrange* is ``1.0`` in the normalization.
             Defaults to the largest absolute difference to *vcenter* for
             the values in the dataset.
+        clip : bool, default: False
+            If ``True`` values falling outside the range ``[vmin, vmax]``,
+            are mapped to 0 or 1, whichever is closer, and masked values are
+            set to 1.  If ``False`` masked values remain masked.
 
         Examples
         --------
@@ -1518,27 +1526,43 @@ class CenteredNorm(Normalize):
         # calling the halfrange setter to set vmin and vmax
         self.halfrange = halfrange
 
-    def _set_vmin_vmax(self):
-        """
-        Set *vmin* and *vmax* based on *vcenter* and *halfrange*.
-        """
-        self.vmax = self._vcenter + self._halfrange
-        self.vmin = self._vcenter - self._halfrange
-
     def autoscale(self, A):
         """
         Set *halfrange* to ``max(abs(A-vcenter))``, then set *vmin* and *vmax*.
         """
         A = np.asanyarray(A)
-        self._halfrange = max(self._vcenter-A.min(),
-                              A.max()-self._vcenter)
-        self._set_vmin_vmax()
+        self.halfrange = max(self._vcenter-A.min(),
+                             A.max()-self._vcenter)
 
     def autoscale_None(self, A):
         """Set *vmin* and *vmax*."""
         A = np.asanyarray(A)
-        if self._halfrange is None and A.size:
+        if self.halfrange is None and A.size:
             self.autoscale(A)
+
+    @property
+    def vmin(self):
+        return self._vmin
+
+    @vmin.setter
+    def vmin(self, value):
+        value = _sanitize_extrema(value)
+        if value != self._vmin:
+            self._vmin = value
+            self._vmax = 2*self.vcenter - value
+            self._changed()
+
+    @property
+    def vmax(self):
+        return self._vmax
+
+    @vmax.setter
+    def vmax(self, value):
+        value = _sanitize_extrema(value)
+        if value != self._vmax:
+            self._vmax = value
+            self._vmin = 2*self.vcenter - value
+            self._changed()
 
     @property
     def vcenter(self):
@@ -1548,32 +1572,24 @@ class CenteredNorm(Normalize):
     def vcenter(self, vcenter):
         if vcenter != self._vcenter:
             self._vcenter = vcenter
+            # Trigger an update of the vmin/vmax values through the setter
+            self.halfrange = self.halfrange
             self._changed()
-        if self.vmax is not None:
-            # recompute halfrange assuming vmin and vmax represent
-            # min and max of data
-            self._halfrange = max(self._vcenter-self.vmin,
-                                  self.vmax-self._vcenter)
-            self._set_vmin_vmax()
 
     @property
     def halfrange(self):
-        return self._halfrange
+        if self.vmin is None or self.vmax is None:
+            return None
+        return (self.vmax - self.vmin) / 2
 
     @halfrange.setter
     def halfrange(self, halfrange):
         if halfrange is None:
-            self._halfrange = None
             self.vmin = None
             self.vmax = None
         else:
-            self._halfrange = abs(halfrange)
-
-    def __call__(self, value, clip=None):
-        if self._halfrange is not None:
-            # enforce symmetry, reset vmin and vmax
-            self._set_vmin_vmax()
-        return super().__call__(value, clip=clip)
+            self.vmin = self.vcenter - abs(halfrange)
+            self.vmax = self.vcenter + abs(halfrange)
 
 
 def make_norm_from_scale(scale_cls, base_norm_cls=None, *, init=None):
@@ -1715,14 +1731,8 @@ def _make_norm_from_scale(
                      .reshape(np.shape(value)))
             return value[0] if is_scalar else value
 
-        def autoscale(self, A):
-            # i.e. A[np.isfinite(...)], but also for non-array A's
-            in_trf_domain = np.extract(np.isfinite(self._trf.transform(A)), A)
-            if in_trf_domain.size == 0:
-                in_trf_domain = np.ma.masked
-            return super().autoscale(in_trf_domain)
-
         def autoscale_None(self, A):
+            # i.e. A[np.isfinite(...)], but also for non-array A's
             in_trf_domain = np.extract(np.isfinite(self._trf.transform(A)), A)
             if in_trf_domain.size == 0:
                 in_trf_domain = np.ma.masked
@@ -2050,7 +2060,7 @@ class NoNorm(Normalize):
 
 def rgb_to_hsv(arr):
     """
-    Convert float rgb values (in the range [0, 1]), in a numpy array to hsv
+    Convert float RGB values (in the range [0, 1]), in a numpy array to HSV
     values.
 
     Parameters
@@ -2060,8 +2070,8 @@ def rgb_to_hsv(arr):
 
     Returns
     -------
-    (..., 3) ndarray
-       Colors converted to hsv values in range [0, 1]
+    (..., 3) `~numpy.ndarray`
+       Colors converted to HSV values in range [0, 1]
     """
     arr = np.asarray(arr)
 
@@ -2102,7 +2112,7 @@ def rgb_to_hsv(arr):
 
 def hsv_to_rgb(hsv):
     """
-    Convert hsv values to rgb.
+    Convert HSV values to RGB.
 
     Parameters
     ----------
@@ -2111,7 +2121,7 @@ def hsv_to_rgb(hsv):
 
     Returns
     -------
-    (..., 3) ndarray
+    (..., 3) `~numpy.ndarray`
        Colors converted to RGB values in range [0, 1]
     """
     hsv = np.asarray(hsv)
@@ -2198,8 +2208,8 @@ class LightSource:
     Angles are in degrees, with the azimuth measured
     clockwise from north and elevation up from the zero plane of the surface.
 
-    `shade` is used to produce "shaded" rgb values for a data array.
-    `shade_rgb` can be used to combine an rgb image with an elevation map.
+    `shade` is used to produce "shaded" RGB values for a data array.
+    `shade_rgb` can be used to combine an RGB image with an elevation map.
     `hillshade` produces an illumination map of a surface.
     """
 
@@ -2278,7 +2288,7 @@ class LightSource:
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             A 2D array of illumination values between 0-1, where 0 is
             completely in shadow and 1 is completely illuminated.
         """
@@ -2321,7 +2331,7 @@ class LightSource:
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             A 2D array of illumination values between 0-1, where 0 is
             completely in shadow and 1 is completely illuminated.
         """
@@ -2399,11 +2409,12 @@ class LightSource:
             full illumination or shadow (and clipping any values that move
             beyond 0 or 1). Note that this is not visually or mathematically
             the same as vertical exaggeration.
-        Additional kwargs are passed on to the *blend_mode* function.
+        **kwargs
+            Additional kwargs are passed on to the *blend_mode* function.
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             An MxNx4 array of floats ranging between 0-1.
         """
         if vmin is None:
@@ -2460,11 +2471,12 @@ class LightSource:
             The x-spacing (columns) of the input *elevation* grid.
         dy : number, optional
             The y-spacing (rows) of the input *elevation* grid.
-        Additional kwargs are passed on to the *blend_mode* function.
+        **kwargs
+            Additional kwargs are passed on to the *blend_mode* function.
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             An (m, n, 3) array of floats ranging between 0-1.
         """
         # Calculate the "hillshade" intensity.
@@ -2503,7 +2515,7 @@ class LightSource:
         which can then be used to plot the shaded image with imshow.
 
         The color of the resulting image will be darkened by moving the (s, v)
-        values (in hsv colorspace) toward (hsv_min_sat, hsv_min_val) in the
+        values (in HSV colorspace) toward (hsv_min_sat, hsv_min_val) in the
         shaded regions, or lightened by sliding (s, v) toward (hsv_max_sat,
         hsv_max_val) in regions that are illuminated.  The default extremes are
         chose so that completely shaded points are nearly black (s = 1, v = 0)
@@ -2511,9 +2523,9 @@ class LightSource:
 
         Parameters
         ----------
-        rgb : ndarray
+        rgb : `~numpy.ndarray`
             An MxNx3 RGB array of floats ranging from 0 to 1 (color image).
-        intensity : ndarray
+        intensity : `~numpy.ndarray`
             An MxNx1 array of floats ranging from 0 to 1 (grayscale image).
         hsv_max_sat : number, default: 1
             The maximum saturation value that the *intensity* map can shift the
@@ -2530,7 +2542,7 @@ class LightSource:
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             An MxNx3 RGB array representing the combined images.
         """
         # Backward compatibility...
@@ -2568,32 +2580,32 @@ class LightSource:
 
     def blend_soft_light(self, rgb, intensity):
         """
-        Combine an rgb image with an intensity map using "soft light" blending,
+        Combine an RGB image with an intensity map using "soft light" blending,
         using the "pegtop" formula.
 
         Parameters
         ----------
-        rgb : ndarray
+        rgb : `~numpy.ndarray`
             An MxNx3 RGB array of floats ranging from 0 to 1 (color image).
-        intensity : ndarray
+        intensity : `~numpy.ndarray`
             An MxNx1 array of floats ranging from 0 to 1 (grayscale image).
 
         Returns
         -------
-        ndarray
+        `~numpy.ndarray`
             An MxNx3 RGB array representing the combined images.
         """
         return 2 * intensity * rgb + (1 - 2 * intensity) * rgb**2
 
     def blend_overlay(self, rgb, intensity):
         """
-        Combine an rgb image with an intensity map using "overlay" blending.
+        Combine an RGB image with an intensity map using "overlay" blending.
 
         Parameters
         ----------
-        rgb : ndarray
+        rgb : `~numpy.ndarray`
             An MxNx3 RGB array of floats ranging from 0 to 1 (color image).
-        intensity : ndarray
+        intensity : `~numpy.ndarray`
             An MxNx1 array of floats ranging from 0 to 1 (grayscale image).
 
         Returns

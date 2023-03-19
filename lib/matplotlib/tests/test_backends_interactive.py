@@ -7,13 +7,17 @@ import platform
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
+
+from PIL import Image
 
 import pytest
 
 import matplotlib as mpl
 from matplotlib import _c_internal_utils
+from matplotlib.backend_tools import ToolToggleBase
 from matplotlib.testing import subprocess_run_helper as _run_helper
 
 
@@ -68,7 +72,25 @@ def _get_testable_interactive_backends():
     return envs
 
 
-_test_timeout = 60  # A reasonably safe value for slower architectures.
+_test_timeout = 120  # A reasonably safe value for slower architectures.
+
+
+def _test_toolbar_button_la_mode_icon(fig):
+    # test a toolbar button icon using an image in LA mode (GH issue 25174)
+    # create an icon in LA mode
+    with tempfile.TemporaryDirectory() as tempdir:
+        img = Image.new("LA", (26, 26))
+        tmp_img_path = os.path.join(tempdir, "test_la_icon.png")
+        img.save(tmp_img_path)
+
+        class CustomTool(ToolToggleBase):
+            image = tmp_img_path
+            description = ""  # gtk3 backend does not allow None
+
+        toolmanager = fig.canvas.manager.toolmanager
+        toolbar = fig.canvas.manager.toolbar
+        toolmanager.add_tool("test", CustomTool)
+        toolbar.add_tool("test", "group")
 
 
 # The source of this function gets extracted and run in another process, so it
@@ -122,13 +144,16 @@ def _test_interactive_impl():
         if importlib.util.find_spec("cairocffi"):
             check_alt_backend(backend[:-3] + "cairo")
         check_alt_backend("svg")
-
     mpl.use(backend, force=True)
 
     fig, ax = plt.subplots()
     assert_equal(
         type(fig.canvas).__module__,
         "matplotlib.backends.backend_{}".format(backend))
+
+    if mpl.rcParams["toolbar"] == "toolmanager":
+        # test toolbar button icon LA mode see GH issue 25174
+        _test_toolbar_button_la_mode_icon(fig)
 
     ax.plot([0, 1], [2, 3])
     if fig.canvas.toolbar:  # i.e toolbar2.
@@ -166,11 +191,19 @@ def test_interactive_backend(env, toolbar):
     if env["MPLBACKEND"] == "macosx":
         if toolbar == "toolmanager":
             pytest.skip("toolmanager is not implemented for macosx.")
-    proc = _run_helper(_test_interactive_impl,
-                       json.dumps({"toolbar": toolbar}),
-                       timeout=_test_timeout,
-                       extra_env=env)
-
+    if env["MPLBACKEND"] == "wx":
+        pytest.skip("wx backend is deprecated; tests failed on appveyor")
+    try:
+        proc = _run_helper(
+                _test_interactive_impl,
+                json.dumps({"toolbar": toolbar}),
+                timeout=_test_timeout,
+                extra_env=env,
+                )
+    except subprocess.CalledProcessError as err:
+        pytest.fail(
+                "Subprocess failed to test intended behavior\n"
+                + str(err.stderr))
     assert proc.stdout.count("CloseEvent") == 1
 
 
@@ -247,13 +280,13 @@ def _impl_test_lazy_auto_backend_selection():
     import matplotlib
     import matplotlib.pyplot as plt
     # just importing pyplot should not be enough to trigger resolution
-    bk = dict.__getitem__(matplotlib.rcParams, 'backend')
+    bk = matplotlib.rcParams._get('backend')
     assert not isinstance(bk, str)
     assert plt._backend_mod is None
     # but actually plotting should
     plt.plot(5)
     assert plt._backend_mod is not None
-    bk = dict.__getitem__(matplotlib.rcParams, 'backend')
+    bk = matplotlib.rcParams._get('backend')
     assert isinstance(bk, str)
 
 
@@ -560,6 +593,8 @@ def _test_figure_leak():
 
 
 # TODO: "0.1" memory threshold could be reduced 10x by fixing tkagg
+@pytest.mark.skipif(sys.platform == "win32",
+                    reason="appveyor tests fail; gh-22988 suggests reworking")
 @pytest.mark.parametrize("env", _get_testable_interactive_backends())
 @pytest.mark.parametrize("time_mem", [(0.0, 2_000_000), (0.1, 30_000_000)])
 def test_figure_leak_20490(env, time_mem):
@@ -568,6 +603,9 @@ def test_figure_leak_20490(env, time_mem):
     # We haven't yet directly identified the leaks so test with a memory growth
     # threshold.
     pause_time, acceptable_memory_leakage = time_mem
+    if env["MPLBACKEND"] == "wx":
+        pytest.skip("wx backend is deprecated; tests failed on appveyor")
+
     if env["MPLBACKEND"] == "macosx" or (
             env["MPLBACKEND"] == "tkagg" and sys.platform == 'darwin'
     ):

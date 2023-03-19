@@ -1,6 +1,7 @@
-numpy==1.23.5
-matplotlib==3.6.2
-matplotlib-inline==0.1.6
+numpy
+matplotlib
+matplotlib-inline
+
 
 # pip install -r requirements.txt
 # or

@@ -56,7 +56,8 @@ from matplotlib import rcsetup, style
 from matplotlib import _pylab_helpers, interactive
 from matplotlib import cbook
 from matplotlib import _docstring
-from matplotlib.backend_bases import FigureCanvasBase, MouseButton
+from matplotlib.backend_bases import (
+    FigureCanvasBase, FigureManagerBase, MouseButton)
 from matplotlib.figure import Figure, FigureBase, figaspect
 from matplotlib.gridspec import GridSpec, SubplotSpec
 from matplotlib import rcParams, rcParamsDefault, get_backend, rcParamsOrig
@@ -201,30 +202,33 @@ def _get_backend_mod():
     This is currently private, but may be made public in the future.
     """
     if _backend_mod is None:
-        # Use __getitem__ here to avoid going through the fallback logic (which
-        # will (re)import pyplot and then call switch_backend if we need to
-        # resolve the auto sentinel)
-        switch_backend(dict.__getitem__(rcParams, "backend"))
+        # Use rcParams._get("backend") to avoid going through the fallback
+        # logic (which will (re)import pyplot and then call switch_backend if
+        # we need to resolve the auto sentinel)
+        switch_backend(rcParams._get("backend"))
     return _backend_mod
 
 
 def switch_backend(newbackend):
     """
-    Close all open figures and set the Matplotlib backend.
+    Set the pyplot backend.
 
-    The argument is case-insensitive.  Switching to an interactive backend is
-    possible only if no event loop for another interactive backend has started.
-    Switching to and from non-interactive backends is always possible.
+    Switching to an interactive backend is possible only if no event loop for
+    another interactive backend has started.  Switching to and from
+    non-interactive backends is always possible.
+
+    If the new backend is different than the current backend then all open
+    Figures will be closed via ``plt.close('all')``.
 
     Parameters
     ----------
     newbackend : str
-        The name of the backend to use.
+        The case-insensitive name of the backend to use.
+
     """
     global _backend_mod
     # make sure the init is pulled up so we can assign to it later
     import matplotlib.backends
-    close("all")
 
     if newbackend is rcsetup._auto_backend_sentinel:
         current_framework = cbook._get_running_interactive_framework()
@@ -261,6 +265,8 @@ def switch_backend(newbackend):
             switch_backend("agg")
             rcParamsOrig["backend"] = "agg"
             return
+    # have to escape the switch on access logic
+    old_backend = dict.__getitem__(rcParams, 'backend')
 
     backend_mod = importlib.import_module(
         cbook._backend_module_name(newbackend))
@@ -280,7 +286,8 @@ def switch_backend(newbackend):
     # Classically, backends can directly export these functions.  This should
     # keep working for backcompat.
     new_figure_manager = getattr(backend_mod, "new_figure_manager", None)
-    # show = getattr(backend_mod, "show", None)
+    show = getattr(backend_mod, "show", None)
+
     # In that classical approach, backends are implemented as modules, but
     # "inherit" default method implementations from backend_bases._Backend.
     # This is achieved by creating a "class" that inherits from
@@ -288,13 +295,14 @@ def switch_backend(newbackend):
     class backend_mod(matplotlib.backend_bases._Backend):
         locals().update(vars(backend_mod))
 
-    # However, the newer approach for defining new_figure_manager (and, in
-    # the future, show) is to derive them from canvas methods.  In that case,
-    # also update backend_mod accordingly; also, per-backend customization of
+    # However, the newer approach for defining new_figure_manager and
+    # show is to derive them from canvas methods.  In that case, also
+    # update backend_mod accordingly; also, per-backend customization of
     # draw_if_interactive is disabled.
     if new_figure_manager is None:
-        # only try to get the canvas class if have opted into the new scheme
+        # Only try to get the canvas class if have opted into the new scheme.
         canvas_class = backend_mod.FigureCanvas
+
         def new_figure_manager_given_figure(num, figure):
             return canvas_class.new_manager(figure, num)
 
@@ -313,6 +321,21 @@ def switch_backend(newbackend):
         backend_mod.new_figure_manager = new_figure_manager
         backend_mod.draw_if_interactive = draw_if_interactive
 
+    # If the manager explicitly overrides pyplot_show, use it even if a global
+    # show is already present, as the latter may be here for backcompat.
+    manager_class = getattr(getattr(backend_mod, "FigureCanvas", None),
+                            "manager_class", None)
+    # We can't compare directly manager_class.pyplot_show and FMB.pyplot_show because
+    # pyplot_show is a classmethod so the above constructs are bound classmethods, and
+    # thus always different (being bound to different classes).  We also have to use
+    # getattr_static instead of vars as manager_class could have no __dict__.
+    manager_pyplot_show = inspect.getattr_static(manager_class, "pyplot_show", None)
+    base_pyplot_show = inspect.getattr_static(FigureManagerBase, "pyplot_show", None)
+    if (show is None
+            or (manager_pyplot_show is not None
+                and manager_pyplot_show != base_pyplot_show)):
+        backend_mod.show = manager_class.pyplot_show
+
     _log.debug("Loaded backend %s version %s.",
                newbackend, backend_mod.backend_version)
 
@@ -325,6 +348,8 @@ def switch_backend(newbackend):
     # Need to keep a global reference to the backend for compatibility reasons.
     # See https://github.com/matplotlib/matplotlib/issues/6092
     matplotlib.backends.backend = newbackend
+    if not cbook._str_equal(old_backend, newbackend):
+        close("all")
 
     # make sure the repl display hook is installed in case we become
     # interactive
@@ -716,12 +741,38 @@ def figure(num=None,  # autoincrement if None, else integer from 1-N
     clear : bool, default: False
         If True and the figure already exists, then it is cleared.
 
-    layout : {'constrained', 'tight', `.LayoutEngine`, None}, default: None
+    layout : {'constrained', 'compressed', 'tight', 'none', `.LayoutEngine`, None}, \
+default: None
         The layout mechanism for positioning of plot elements to avoid
         overlapping Axes decorations (labels, ticks, etc). Note that layout
-        managers can measurably slow down figure display. Defaults to *None*
-        (but see the documentation of the `.Figure` constructor regarding the
-        interaction with rcParams).
+        managers can measurably slow down figure display.
+
+        - 'constrained': The constrained layout solver adjusts axes sizes
+          to avoid overlapping axes decorations.  Can handle complex plot
+          layouts and colorbars, and is thus recommended.
+
+          See :doc:`/tutorials/intermediate/constrainedlayout_guide`
+          for examples.
+
+        - 'compressed': uses the same algorithm as 'constrained', but
+          removes extra space between fixed-aspect-ratio Axes.  Best for
+          simple grids of axes.
+
+        - 'tight': Use the tight layout mechanism. This is a relatively
+          simple algorithm that adjusts the subplot parameters so that
+          decorations do not overlap. See `.Figure.set_tight_layout` for
+          further details.
+
+        - 'none': Do not use a layout engine.
+
+        - A `.LayoutEngine` instance. Builtin layout classes are
+          `.ConstrainedLayoutEngine` and `.TightLayoutEngine`, more easily
+          accessible by 'constrained' and 'tight'.  Passing an instance
+          allows third parties to provide their own layout engine.
+
+        If not given, fall back to using the parameters *tight_layout* and
+        *constrained_layout*, including their config defaults
+        :rc:`figure.autolayout` and :rc:`figure.constrained_layout.use`.
 
     **kwargs
         Additional keyword arguments are passed to the `.Figure` constructor.
@@ -732,9 +783,15 @@ def figure(num=None,  # autoincrement if None, else integer from 1-N
 
     Notes
     -----
-    Newly created figures are passed to the `~.FigureCanvasBase.new_manager`
+    A newly created figure is passed to the `~.FigureCanvasBase.new_manager`
     method or the `new_figure_manager` function provided by the current
     backend, which install a canvas and a manager on the figure.
+
+    Once this is done, :rc:`figure.hooks` are called, one at a time, on the
+    figure; these hooks allow arbitrary customization of the figure (e.g.,
+    attaching callbacks) or of associated elements (e.g., modifying the
+    toolbar).  See :doc:`/gallery/user_interfaces/mplcvd` for an example of
+    toolbar customization.
 
     If you are creating many figures, make sure you explicitly call
     `.pyplot.close` on the figures you are not using, because this will
@@ -787,6 +844,13 @@ def figure(num=None,  # autoincrement if None, else integer from 1-N
         fig = manager.canvas.figure
         if fig_label:
             fig.set_label(fig_label)
+
+        for hookspecs in rcParams["figure.hooks"]:
+            module_name, dotted_name = hookspecs.split(":")
+            obj = importlib.import_module(module_name)
+            for part in dotted_name.split("."):
+                obj = getattr(obj, part)
+            obj(fig)
 
         _pylab_helpers.Gcf._set_new_active_manager(manager)
 
@@ -944,6 +1008,11 @@ def draw():
 
     This is equivalent to calling ``fig.canvas.draw_idle()``, where ``fig`` is
     the current figure.
+
+    See Also
+    --------
+    .FigureCanvasBase.draw_idle
+    .FigureCanvasBase.draw
     """
     gcf().canvas.draw_idle()
 
@@ -962,7 +1031,10 @@ def savefig(*args, **kwargs):
 def figlegend(*args, **kwargs):
     return gcf().legend(*args, **kwargs)
 if Figure.legend.__doc__:
-    figlegend.__doc__ = Figure.legend.__doc__.replace("legend(", "figlegend(")
+    figlegend.__doc__ = Figure.legend.__doc__ \
+        .replace(" legend(", " figlegend(") \
+        .replace("fig.legend(", "plt.figlegend(") \
+        .replace("ax.plot(", "plt.plot(")
 
 
 ## Axes ##
@@ -1024,17 +1096,6 @@ def axes(arg=None, **kwargs):
         class.
 
         %(Axes:kwdoc)s
-
-    Notes
-    -----
-    If the figure already has an Axes with key (*args*,
-    *kwargs*) then it will simply make that axes current and
-    return it.  This behavior is deprecated. Meanwhile, if you do
-    not want this behavior (i.e., you want to force the creation of a
-    new axes), you must use a unique set of args and kwargs.  The Axes
-    *label* attribute has been exposed for this purpose: if you want
-    two Axes that are otherwise identical to be added to the figure,
-    make sure you give them unique labels.
 
     See Also
     --------
@@ -1142,13 +1203,11 @@ def subplot(*args, **kwargs):
 
     Returns
     -------
-    `.axes.SubplotBase`, or another subclass of `~.axes.Axes`
+    `~.axes.Axes`
 
-        The axes of the subplot. The returned axes base class depends on
-        the projection used. It is `~.axes.Axes` if rectilinear projection
-        is used and `.projections.polar.PolarAxes` if polar projection
-        is used. The returned axes is then a subplot subclass of the
-        base class.
+        The Axes of the subplot. The returned Axes can actually be an instance
+        of a subclass, such as `.projections.polar.PolarAxes` for polar
+        projections.
 
     Other Parameters
     ----------------
@@ -1265,7 +1324,7 @@ def subplot(*args, **kwargs):
 
     for ax in fig.axes:
         # if we found an Axes at the position sort out if we can re-use it
-        if hasattr(ax, 'get_subplotspec') and ax.get_subplotspec() == key:
+        if ax.get_subplotspec() == key:
             # if the user passed no kwargs, re-use
             if kwargs == {}:
                 break
@@ -1449,18 +1508,14 @@ def subplots(nrows=1, ncols=1, *, sharex=False, sharey=False, squeeze=True,
 
 def subplot_mosaic(mosaic, *, sharex=False, sharey=False,
                    width_ratios=None, height_ratios=None, empty_sentinel='.',
-                   subplot_kw=None, gridspec_kw=None, **fig_kw):
+                   subplot_kw=None, gridspec_kw=None,
+                   per_subplot_kw=None, **fig_kw):
     """
     Build a layout of Axes based on ASCII art or nested lists.
 
     This is a helper function to build complex GridSpec layouts visually.
 
-    .. note::
-
-       This API is provisional and may be revised in the future based on
-       early user feedback.
-
-    See :doc:`/tutorials/provisional/mosaic`
+    See :doc:`/gallery/subplots_axes_and_figures/mosaic`
     for an example and full API documentation
 
     Parameters
@@ -1520,7 +1575,21 @@ def subplot_mosaic(mosaic, *, sharex=False, sharey=False,
 
     subplot_kw : dict, optional
         Dictionary with keywords passed to the `.Figure.add_subplot` call
-        used to create each subplot.
+        used to create each subplot.  These values may be overridden by
+        values in *per_subplot_kw*.
+
+    per_subplot_kw : dict, optional
+        A dictionary mapping the Axes identifiers or tuples of identifiers
+        to a dictionary of keyword arguments to be passed to the
+        `.Figure.add_subplot` call used to create each subplot.  The values
+        in these dictionaries have precedence over the values in
+        *subplot_kw*.
+
+        If *mosaic* is a string, and thus all keys are single characters,
+        it is possible to use a single string instead of a tuple as keys;
+        i.e. ``"AB"`` is equivalent to ``("A", "B")``.
+
+        .. versionadded:: 3.7
 
     gridspec_kw : dict, optional
         Dictionary with keywords passed to the `.GridSpec` constructor used
@@ -1546,7 +1615,8 @@ def subplot_mosaic(mosaic, *, sharex=False, sharey=False,
         mosaic, sharex=sharex, sharey=sharey,
         height_ratios=height_ratios, width_ratios=width_ratios,
         subplot_kw=subplot_kw, gridspec_kw=gridspec_kw,
-        empty_sentinel=empty_sentinel
+        empty_sentinel=empty_sentinel,
+        per_subplot_kw=per_subplot_kw,
     )
     return fig, ax_dict
 
@@ -1572,12 +1642,11 @@ def subplot2grid(shape, loc, rowspan=1, colspan=1, fig=None, **kwargs):
 
     Returns
     -------
-    `.axes.SubplotBase`, or another subclass of `~.axes.Axes`
+    `~.axes.Axes`
 
-        The axes of the subplot.  The returned axes base class depends on the
-        projection used.  It is `~.axes.Axes` if rectilinear projection is used
-        and `.projections.polar.PolarAxes` if polar projection is used.  The
-        returned axes is then a subplot subclass of the base class.
+        The Axes of the subplot. The returned Axes can actually be an instance
+        of a subclass, such as `.projections.polar.PolarAxes` for polar
+        projections.
 
     Notes
     -----
@@ -2028,20 +2097,23 @@ def thetagrids(angles=None, labels=None, fmt=None, **kwargs):
     return lines, labels
 
 
-_NON_PLOT_COMMANDS = {
-    'connect', 'disconnect', 'get_current_fig_manager', 'ginput',
-    'new_figure_manager', 'waitforbuttonpress'}
-
-
+@_api.deprecated("3.7", pending=True)
 def get_plot_commands():
     """
     Get a sorted list of all of the plotting commands.
     """
+    NON_PLOT_COMMANDS = {
+        'connect', 'disconnect', 'get_current_fig_manager', 'ginput',
+        'new_figure_manager', 'waitforbuttonpress'}
+    return (name for name in _get_pyplot_commands()
+            if name not in NON_PLOT_COMMANDS)
+
+
+def _get_pyplot_commands():
     # This works by searching for all functions in this module and removing
     # a few hard-coded exclusions, as well as all of the colormap-setting
     # functions, and anything marked as private with a preceding underscore.
-    exclude = {'colormaps', 'colors', 'get_plot_commands',
-               *_NON_PLOT_COMMANDS, *colormaps}
+    exclude = {'colormaps', 'colors', 'get_plot_commands', *colormaps}
     this_module = inspect.getmodule(get_plot_commands)
     return sorted(
         name for name, obj in globals().items()
@@ -2209,7 +2281,7 @@ if (rcParams["backend_fallback"]
         and rcParams._get_backend_or_none() in (
             set(_interactive_bk) - {'WebAgg', 'nbAgg'})
         and cbook._get_running_interactive_framework()):
-    dict.__setitem__(rcParams, "backend", rcsetup._auto_backend_sentinel)
+    rcParams._set("backend", rcsetup._auto_backend_sentinel)
 
 
 ################# REMAINING CONTENT GENERATED BY boilerplate.py ##############
@@ -2337,8 +2409,8 @@ def axhspan(ymin, ymax, xmin=0, xmax=1, **kwargs):
 
 # Autogenerated by boilerplate.py.  Do not edit as changes will be lost.
 @_copy_docstring_and_deprecators(Axes.axis)
-def axis(*args, emit=True, **kwargs):
-    return gca().axis(*args, emit=emit, **kwargs)
+def axis(arg=None, /, *, emit=True, **kwargs):
+    return gca().axis(arg, emit=emit, **kwargs)
 
 
 # Autogenerated by boilerplate.py.  Do not edit as changes will be lost.
@@ -2501,12 +2573,12 @@ def errorbar(
 @_copy_docstring_and_deprecators(Axes.eventplot)
 def eventplot(
         positions, orientation='horizontal', lineoffsets=1,
-        linelengths=1, linewidths=None, colors=None,
+        linelengths=1, linewidths=None, colors=None, alpha=None,
         linestyles='solid', *, data=None, **kwargs):
     return gca().eventplot(
         positions, orientation=orientation, lineoffsets=lineoffsets,
         linelengths=linelengths, linewidths=linewidths, colors=colors,
-        linestyles=linestyles,
+        alpha=alpha, linestyles=linestyles,
         **({"data": data} if data is not None else {}), **kwargs)
 
 
@@ -2616,8 +2688,8 @@ def hlines(
 # Autogenerated by boilerplate.py.  Do not edit as changes will be lost.
 @_copy_docstring_and_deprecators(Axes.imshow)
 def imshow(
-        X, cmap=None, norm=None, aspect=None, interpolation=None,
-        alpha=None, vmin=None, vmax=None, origin=None, extent=None, *,
+        X, cmap=None, norm=None, *, aspect=None, interpolation=None,
+        alpha=None, vmin=None, vmax=None, origin=None, extent=None,
         interpolation_stage=None, filternorm=True, filterrad=4.0,
         resample=None, url=None, data=None, **kwargs):
     __ret = gca().imshow(
@@ -2723,7 +2795,7 @@ def pie(
         pctdistance=0.6, shadow=False, labeldistance=1.1,
         startangle=0, radius=1, counterclock=True, wedgeprops=None,
         textprops=None, center=(0, 0), frame=False,
-        rotatelabels=False, *, normalize=True, data=None):
+        rotatelabels=False, *, normalize=True, hatch=None, data=None):
     return gca().pie(
         x, explode=explode, labels=labels, colors=colors,
         autopct=autopct, pctdistance=pctdistance, shadow=shadow,
@@ -2731,7 +2803,7 @@ def pie(
         radius=radius, counterclock=counterclock,
         wedgeprops=wedgeprops, textprops=textprops, center=center,
         frame=frame, rotatelabels=rotatelabels, normalize=normalize,
-        **({"data": data} if data is not None else {}))
+        hatch=hatch, **({"data": data} if data is not None else {}))
 
 
 # Autogenerated by boilerplate.py.  Do not edit as changes will be lost.

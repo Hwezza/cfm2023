@@ -7,7 +7,9 @@ import inspect
 import math
 from numbers import Number
 import textwrap
+from types import SimpleNamespace
 from collections import namedtuple
+from matplotlib.transforms import Affine2D
 
 import numpy as np
 
@@ -101,7 +103,7 @@ class Patch(artist.Artist):
         """
         Return a copy of the vertices used in this patch.
 
-        If the patch contains Bezier curves, the curves will be interpolated by
+        If the patch contains Bézier curves, the curves will be interpolated by
         line segments.  To access the curves as curves, use `get_path`.
         """
         trans = self.get_transform()
@@ -164,7 +166,7 @@ class Patch(artist.Artist):
             ``self.get_transform()``. These are display coordinates for patches
             that are added to a figure or axes.
         radius : float, optional
-            Add an additional margin on the patch in target coordinates of
+            Additional margin on the patch in target coordinates of
             ``self.get_transform()``. See `.Path.contains_point` for further
             details.
 
@@ -214,7 +216,7 @@ class Patch(artist.Artist):
             ``self.get_transform()``. These are display coordinates for patches
             that are added to a figure or axes. Columns contain x and y values.
         radius : float, optional
-            Add an additional margin on the patch in target coordinates of
+            Additional margin on the patch in target coordinates of
             ``self.get_transform()``. See `.Path.contains_point` for further
             details.
 
@@ -610,7 +612,7 @@ class Patch(artist.Artist):
 
 class Shadow(Patch):
     def __str__(self):
-        return "Shadow(%s)" % (str(self.patch))
+        return f"Shadow({self.patch})"
 
     @_docstring.dedent_interpd
     def __init__(self, patch, ox, oy, **kwargs):
@@ -941,7 +943,7 @@ class PathPatch(Patch):
     @_docstring.dedent_interpd
     def __init__(self, path, **kwargs):
         """
-        *path* is a `~.path.Path` object.
+        *path* is a `.Path` object.
 
         Valid keyword arguments are:
 
@@ -961,7 +963,7 @@ class StepPatch(PathPatch):
     """
     A path patch describing a stepwise constant function.
 
-    By default the path is not closed and starts and stops at
+    By default, the path is not closed and starts and stops at
     baseline value.
     """
 
@@ -1137,7 +1139,7 @@ class Polygon(Patch):
 
         Notes
         -----
-        Unlike `~.path.Path`, we do not ignore the last input vertex. If the
+        Unlike `.Path`, we do not ignore the last input vertex. If the
         polygon is meant to be closed, and the last point of the polygon is not
         equal to the first, we assume that the user has not explicitly passed a
         ``CLOSEPOLY`` vertex, and add it ourselves.
@@ -1209,21 +1211,15 @@ class Wedge(Patch):
             # followed by a reversed and scaled inner ring
             v1 = arc.vertices
             v2 = arc.vertices[::-1] * (self.r - self.width) / self.r
-            v = np.concatenate([v1, v2, [v1[0, :], (0, 0)]])
-            c = np.concatenate([
-                arc.codes, arc.codes, [connector, Path.CLOSEPOLY]])
-            c[len(arc.codes)] = connector
+            v = np.concatenate([v1, v2, [(0, 0)]])
+            c = [*arc.codes, connector, *arc.codes[1:], Path.CLOSEPOLY]
         else:
             # Wedge doesn't need an inner ring
-            v = np.concatenate([
-                arc.vertices, [(0, 0), arc.vertices[0, :], (0, 0)]])
-            c = np.concatenate([
-                arc.codes, [connector, connector, Path.CLOSEPOLY]])
+            v = np.concatenate([arc.vertices, [(0, 0), (0, 0)]])
+            c = [*arc.codes, connector, Path.CLOSEPOLY]
 
         # Shift and scale the wedge to the final location.
-        v *= self.r
-        v += np.asarray(self.center)
-        self._path = Path(v, c)
+        self._path = Path(v * self.r + self.center, c)
 
     def set_center(self, center):
         self._path = None
@@ -1942,8 +1938,7 @@ class Arc(Ellipse):
         ----------------
         **kwargs : `.Patch` properties
             Most `.Patch` properties are supported as keyword arguments,
-            with the exception of *fill* and *facecolor* because filling is
-            not supported.
+            except *fill* and *facecolor* because filling is not supported.
 
         %(Patch:kwdoc)s
         """
@@ -2343,7 +2338,35 @@ class BoxStyle(_Style):
             # boundary of the padded box
             x0, y0 = x0 - pad, y0 - pad
             return Path.circle((x0 + width / 2, y0 + height / 2),
-                               max(width, height) / 2)
+                                max(width, height) / 2)
+
+    @_register_style(_style_list)
+    class Ellipse:
+        """
+        An elliptical box.
+
+        .. versionadded:: 3.7
+        """
+
+        def __init__(self, pad=0.3):
+            """
+            Parameters
+            ----------
+            pad : float, default: 0.3
+                The amount of padding around the original box.
+            """
+            self.pad = pad
+
+        def __call__(self, x0, y0, width, height, mutation_size):
+            pad = mutation_size * self.pad
+            width, height = width + 2 * pad, height + 2 * pad
+            # boundary of the padded box
+            x0, y0 = x0 - pad, y0 - pad
+            a = width / math.sqrt(2)
+            b = height / math.sqrt(2)
+            trans = Affine2D().scale(a, b).translate(x0 + width / 2,
+                                                     y0 + height / 2)
+            return trans.transform_path(Path.unit_circle())
 
     @_register_style(_style_list)
     class LArrow:
@@ -2480,9 +2503,7 @@ class BoxStyle(_Style):
                    Path.CURVE3, Path.CURVE3,
                    Path.CLOSEPOLY]
 
-            path = Path(cp, com)
-
-            return path
+            return Path(cp, com)
 
     @_register_style(_style_list)
     class Round4:
@@ -2531,9 +2552,7 @@ class BoxStyle(_Style):
                    Path.CURVE4, Path.CURVE4, Path.CURVE4,
                    Path.CLOSEPOLY]
 
-            path = Path(cp, com)
-
-            return path
+            return Path(cp, com)
 
     @_register_style(_style_list)
     class Sawtooth:
@@ -2562,74 +2581,39 @@ class BoxStyle(_Style):
             else:
                 tooth_size = self.tooth_size * mutation_size
 
-            tooth_size2 = tooth_size / 2
+            hsz = tooth_size / 2
             width = width + 2 * pad - tooth_size
             height = height + 2 * pad - tooth_size
 
             # the sizes of the vertical and horizontal sawtooth are
             # separately adjusted to fit the given box size.
-            dsx_n = int(round((width - tooth_size) / (tooth_size * 2))) * 2
+            dsx_n = round((width - tooth_size) / (tooth_size * 2)) * 2
             dsx = (width - tooth_size) / dsx_n
-            dsy_n = int(round((height - tooth_size) / (tooth_size * 2))) * 2
+            dsy_n = round((height - tooth_size) / (tooth_size * 2)) * 2
             dsy = (height - tooth_size) / dsy_n
 
-            x0, y0 = x0 - pad + tooth_size2, y0 - pad + tooth_size2
+            x0, y0 = x0 - pad + hsz, y0 - pad + hsz
             x1, y1 = x0 + width, y0 + height
 
-            bottom_saw_x = [
-                x0,
-                *(x0 + tooth_size2 + dsx * .5 * np.arange(dsx_n * 2)),
-                x1 - tooth_size2,
+            xs = [
+                x0, *np.linspace(x0 + hsz, x1 - hsz, 2 * dsx_n + 1),  # bottom
+                *([x1, x1 + hsz, x1, x1 - hsz] * dsy_n)[:2*dsy_n+2],  # right
+                x1, *np.linspace(x1 - hsz, x0 + hsz, 2 * dsx_n + 1),  # top
+                *([x0, x0 - hsz, x0, x0 + hsz] * dsy_n)[:2*dsy_n+2],  # left
             ]
-            bottom_saw_y = [
-                y0,
-                *([y0 - tooth_size2, y0, y0 + tooth_size2, y0] * dsx_n),
-                y0 - tooth_size2,
-            ]
-            right_saw_x = [
-                x1,
-                *([x1 + tooth_size2, x1, x1 - tooth_size2, x1] * dsx_n),
-                x1 + tooth_size2,
-            ]
-            right_saw_y = [
-                y0,
-                *(y0 + tooth_size2 + dsy * .5 * np.arange(dsy_n * 2)),
-                y1 - tooth_size2,
-            ]
-            top_saw_x = [
-                x1,
-                *(x1 - tooth_size2 - dsx * .5 * np.arange(dsx_n * 2)),
-                x0 + tooth_size2,
-            ]
-            top_saw_y = [
-                y1,
-                *([y1 + tooth_size2, y1, y1 - tooth_size2, y1] * dsx_n),
-                y1 + tooth_size2,
-            ]
-            left_saw_x = [
-                x0,
-                *([x0 - tooth_size2, x0, x0 + tooth_size2, x0] * dsy_n),
-                x0 - tooth_size2,
-            ]
-            left_saw_y = [
-                y1,
-                *(y1 - tooth_size2 - dsy * .5 * np.arange(dsy_n * 2)),
-                y0 + tooth_size2,
+            ys = [
+                *([y0, y0 - hsz, y0, y0 + hsz] * dsx_n)[:2*dsx_n+2],  # bottom
+                y0, *np.linspace(y0 + hsz, y1 - hsz, 2 * dsy_n + 1),  # right
+                *([y1, y1 + hsz, y1, y1 - hsz] * dsx_n)[:2*dsx_n+2],  # top
+                y1, *np.linspace(y1 - hsz, y0 + hsz, 2 * dsy_n + 1),  # left
             ]
 
-            saw_vertices = [*zip(bottom_saw_x, bottom_saw_y),
-                            *zip(right_saw_x, right_saw_y),
-                            *zip(top_saw_x, top_saw_y),
-                            *zip(left_saw_x, left_saw_y),
-                            (bottom_saw_x[0], bottom_saw_y[0])]
-
-            return saw_vertices
+            return [*zip(xs, ys), (xs[0], ys[0])]
 
         def __call__(self, x0, y0, width, height, mutation_size):
             saw_vertices = self._get_sawtooth_vertices(x0, y0, width,
                                                        height, mutation_size)
-            path = Path(saw_vertices, closed=True)
-            return path
+            return Path(saw_vertices, closed=True)
 
     @_register_style(_style_list)
     class Roundtooth(Sawtooth):
@@ -2670,7 +2654,7 @@ class ConnectionStyle(_Style):
 
     %(ConnectionStyle:table)s
 
-    An instance of any connection style class is an callable object,
+    An instance of any connection style class is a callable object,
     whose call signature is::
 
         __call__(self, posA, posB,
@@ -2700,59 +2684,35 @@ class ConnectionStyle(_Style):
         helper methods.
         """
 
+        @_api.deprecated("3.7")
         class SimpleEvent:
             def __init__(self, xy):
                 self.x, self.y = xy
 
-        def _clip(self, path, patchA, patchB):
+        def _in_patch(self, patch):
             """
-            Clip the path to the boundary of the patchA and patchB.
-            The starting point of the path needed to be inside of the
-            patchA and the end point inside the patch B. The *contains*
-            methods of each patch object is utilized to test if the point
-            is inside the path.
+            Return a predicate function testing whether a point *xy* is
+            contained in *patch*.
             """
+            return lambda xy: patch.contains(
+                SimpleNamespace(x=xy[0], y=xy[1]))[0]
 
-            if patchA:
-                def insideA(xy_display):
-                    xy_event = ConnectionStyle._Base.SimpleEvent(xy_display)
-                    return patchA.contains(xy_event)[0]
+        def _clip(self, path, in_start, in_stop):
+            """
+            Clip *path* at its start by the region where *in_start* returns
+            True, and at its stop by the region where *in_stop* returns True.
 
+            The original path is assumed to start in the *in_start* region and
+            to stop in the *in_stop* region.
+            """
+            if in_start:
                 try:
-                    left, right = split_path_inout(path, insideA)
-                except ValueError:
-                    right = path
-
-                path = right
-
-            if patchB:
-                def insideB(xy_display):
-                    xy_event = ConnectionStyle._Base.SimpleEvent(xy_display)
-                    return patchB.contains(xy_event)[0]
-
-                try:
-                    left, right = split_path_inout(path, insideB)
-                except ValueError:
-                    left = path
-
-                path = left
-
-            return path
-
-        def _shrink(self, path, shrinkA, shrinkB):
-            """
-            Shrink the path by fixed size (in points) with shrinkA and shrinkB.
-            """
-            if shrinkA:
-                insideA = inside_circle(*path.vertices[0], shrinkA)
-                try:
-                    left, path = split_path_inout(path, insideA)
+                    _, path = split_path_inout(path, in_start)
                 except ValueError:
                     pass
-            if shrinkB:
-                insideB = inside_circle(*path.vertices[-1], shrinkB)
+            if in_stop:
                 try:
-                    path, right = split_path_inout(path, insideB)
+                    path, _ = split_path_inout(path, in_stop)
                 except ValueError:
                     pass
             return path
@@ -2764,14 +2724,22 @@ class ConnectionStyle(_Style):
             *posB*; then clip and shrink the path.
             """
             path = self.connect(posA, posB)
-            clipped_path = self._clip(path, patchA, patchB)
-            shrunk_path = self._shrink(clipped_path, shrinkA, shrinkB)
-            return shrunk_path
+            path = self._clip(
+                path,
+                self._in_patch(patchA) if patchA else None,
+                self._in_patch(patchB) if patchB else None,
+            )
+            path = self._clip(
+                path,
+                inside_circle(*path.vertices[0], shrinkA) if shrinkA else None,
+                inside_circle(*path.vertices[-1], shrinkB) if shrinkB else None
+            )
+            return path
 
     @_register_style(_style_list)
     class Arc3(_Base):
         """
-        Creates a simple quadratic Bezier curve between two
+        Creates a simple quadratic Bézier curve between two
         points. The curve is created so that the middle control point
         (C1) is located at the same distance from the start (C0) and
         end points(C2) and the distance of the C1 to the line
@@ -2780,8 +2748,10 @@ class ConnectionStyle(_Style):
 
         def __init__(self, rad=0.):
             """
-            *rad*
-              curvature of the curve.
+            Parameters
+            ----------
+            rad : float
+              Curvature of the curve.
             """
             self.rad = rad
 
@@ -2807,19 +2777,21 @@ class ConnectionStyle(_Style):
     @_register_style(_style_list)
     class Angle3(_Base):
         """
-        Creates a simple quadratic Bezier curve between two
-        points. The middle control points is placed at the
-        intersecting point of two lines which cross the start and
-        end point, and have a slope of angleA and angleB, respectively.
+        Creates a simple quadratic Bézier curve between two points. The middle
+        control point is placed at the intersecting point of two lines which
+        cross the start and end point, and have a slope of *angleA* and
+        *angleB*, respectively.
         """
 
         def __init__(self, angleA=90, angleB=0):
             """
-            *angleA*
-              starting angle of the path
+            Parameters
+            ----------
+            angleA : float
+              Starting angle of the path.
 
-            *angleB*
-              ending angle of the path
+            angleB : float
+              Ending angle of the path.
             """
 
             self.angleA = angleA
@@ -2845,23 +2817,25 @@ class ConnectionStyle(_Style):
     @_register_style(_style_list)
     class Angle(_Base):
         """
-        Creates a piecewise continuous quadratic Bezier path between
-        two points. The path has a one passing-through point placed at
-        the intersecting point of two lines which cross the start
-        and end point, and have a slope of angleA and angleB, respectively.
+        Creates a piecewise continuous quadratic Bézier path between two
+        points. The path has a one passing-through point placed at the
+        intersecting point of two lines which cross the start and end point,
+        and have a slope of *angleA* and *angleB*, respectively.
         The connecting edges are rounded with *rad*.
         """
 
         def __init__(self, angleA=90, angleB=0, rad=0.):
             """
-            *angleA*
-              starting angle of the path
+            Parameters
+            ----------
+            angleA : float
+              Starting angle of the path.
 
-            *angleB*
-              ending angle of the path
+            angleB : float
+              Ending angle of the path.
 
-            *rad*
-              rounding radius of the edge
+            rad : float
+              Rounding radius of the edge.
             """
 
             self.angleA = angleA
@@ -2907,29 +2881,31 @@ class ConnectionStyle(_Style):
     @_register_style(_style_list)
     class Arc(_Base):
         """
-        Creates a piecewise continuous quadratic Bezier path between
-        two points. The path can have two passing-through points, a
-        point placed at the distance of armA and angle of angleA from
+        Creates a piecewise continuous quadratic Bézier path between two
+        points. The path can have two passing-through points, a
+        point placed at the distance of *armA* and angle of *angleA* from
         point A, another point with respect to point B. The edges are
         rounded with *rad*.
         """
 
         def __init__(self, angleA=0, angleB=0, armA=None, armB=None, rad=0.):
             """
-            *angleA* :
-              starting angle of the path
+            Parameters
+            ----------
+            angleA : float
+              Starting angle of the path.
 
-            *angleB* :
-              ending angle of the path
+            angleB : float
+              Ending angle of the path.
 
-            *armA* :
-              length of the starting arm
+            armA : float or None
+              Length of the starting arm.
 
-            *armB* :
-              length of the ending arm
+            armB : float or None
+              Length of the ending arm.
 
-            *rad* :
-              rounding radius of the edges
+            rad : float
+              Rounding radius of the edges.
             """
 
             self.angleA = angleA
@@ -3001,10 +2977,10 @@ class ConnectionStyle(_Style):
     @_register_style(_style_list)
     class Bar(_Base):
         """
-        A line with *angle* between A and B with *armA* and
-        *armB*. One of the arms is extended so that they are connected in
-        a right angle. The length of armA is determined by (*armA*
-        + *fraction* x AB distance). Same for armB.
+        A line with *angle* between A and B with *armA* and *armB*. One of the
+        arms is extended so that they are connected in a right angle. The
+        length of *armA* is determined by (*armA* + *fraction* x AB distance).
+        Same for *armB*.
         """
 
         def __init__(self, armA=0., armB=0., fraction=0.3, angle=None):
@@ -3012,18 +2988,17 @@ class ConnectionStyle(_Style):
             Parameters
             ----------
             armA : float
-                minimum length of armA
+                Minimum length of armA.
 
             armB : float
-                minimum length of armB
+                Minimum length of armB.
 
             fraction : float
-                a fraction of the distance between two points that
-                will be added to armA and armB.
+                A fraction of the distance between two points that will be
+                added to armA and armB.
 
             angle : float or None
-                angle of the connecting line (if None, parallel
-                to A and B)
+                Angle of the connecting line (if None, parallel to A and B).
             """
             self.armA = armA
             self.armB = armB
@@ -3091,7 +3066,7 @@ class ArrowStyle(_Style):
     arrowstyle classes, which is used to create an arrow path along a
     given path.  These are mainly used with `FancyArrowPatch`.
 
-    A arrowstyle object can be either created as::
+    An arrowstyle object can be either created as::
 
            ArrowStyle.Fancy(head_length=.4, head_width=.4, tail_width=.4)
 
@@ -3151,9 +3126,9 @@ class ArrowStyle(_Style):
         def ensure_quadratic_bezier(path):
             """
             Some ArrowStyle classes only works with a simple quadratic
-            Bezier curve (created with `.ConnectionStyle.Arc3` or
+            Bézier curve (created with `.ConnectionStyle.Arc3` or
             `.ConnectionStyle.Angle3`). This static method checks if the
-            provided path is a simple quadratic Bezier curve and returns its
+            provided path is a simple quadratic Bézier curve and returns its
             control points if true.
             """
             segments = list(path.iter_segments())
@@ -3166,14 +3141,14 @@ class ArrowStyle(_Style):
         def transmute(self, path, mutation_size, linewidth):
             """
             The transmute method is the very core of the ArrowStyle class and
-            must be overridden in the subclasses. It receives the path object
-            along which the arrow will be drawn, and the mutation_size, with
-            which the arrow head etc. will be scaled. The linewidth may be
-            used to adjust the path so that it does not pass beyond the given
-            points. It returns a tuple of a Path instance and a boolean. The
-            boolean value indicate whether the path can be filled or not. The
-            return value can also be a list of paths and list of booleans of a
-            same length.
+            must be overridden in the subclasses. It receives the *path*
+            object along which the arrow will be drawn, and the
+            *mutation_size*, with which the arrow head etc. will be scaled.
+            The *linewidth* may be used to adjust the path so that it does not
+            pass beyond the given points. It returns a tuple of a `.Path`
+            instance and a boolean. The boolean value indicate whether the
+            path can be filled or not. The return value can also be a list of
+            paths and list of booleans of the same length.
             """
             raise NotImplementedError('Derived must override')
 
@@ -3206,12 +3181,11 @@ class ArrowStyle(_Style):
         """
         A simple arrow which will work with any path instance. The
         returned path is the concatenation of the original path, and at
-        most two paths representing the arrow head or bracket at the begin
+        most two paths representing the arrow head or bracket at the start
         point and at the end point. The arrow heads can be either open
         or closed.
         """
 
-        beginarrow = endarrow = None  # Whether arrows are drawn.
         arrow = "-"
         fillbegin = fillend = False  # Whether arrows are filled.
 
@@ -3222,29 +3196,18 @@ class ArrowStyle(_Style):
             Parameters
             ----------
             head_length : float, default: 0.4
-                Length of the arrow head, relative to *mutation_scale*.
+                Length of the arrow head, relative to *mutation_size*.
             head_width : float, default: 0.2
-                Width of the arrow head, relative to *mutation_scale*.
-            widthA : float, default: 1.0
-                Width of the bracket at the beginning of the arrow
-            widthB : float, default: 1.0
-                Width of the bracket at the end of the arrow
-            lengthA : float, default: 0.2
-                Length of the bracket at the beginning of the arrow
-            lengthB : float, default: 0.2
-                Length of the bracket at the end of the arrow
-            angleA : float, default 0
-                Orientation of the bracket at the beginning, as a
-                counterclockwise angle. 0 degrees means perpendicular
-                to the line.
-            angleB : float, default 0
-                Orientation of the bracket at the beginning, as a
-                counterclockwise angle. 0 degrees means perpendicular
-                to the line.
-            scaleA : float, default *mutation_size*
-                The mutation_size for the beginning bracket
-            scaleB : float, default *mutation_size*
-                The mutation_size for the end bracket
+                Width of the arrow head, relative to *mutation_size*.
+            widthA, widthB : float, default: 1.0
+                Width of the bracket.
+            lengthA, lengthB : float, default: 0.2
+                Length of the bracket.
+            angleA, angleB : float, default: 0
+                Orientation of the bracket, as a counterclockwise angle.
+                0 degrees means perpendicular to the line.
+            scaleA, scaleB : float, default: *mutation_size*
+                The scale of the brackets.
             """
 
             self.head_length, self.head_width = head_length, head_width
@@ -3274,18 +3237,6 @@ class ArrowStyle(_Style):
             elif beginarrow in ("]", "|"):
                 self._beginarrow_head = False
                 self._beginarrow_bracket = True
-            elif self.beginarrow is True:
-                self._beginarrow_head = True
-                self._beginarrow_bracket = False
-
-                _api.warn_deprecated('3.5', name="beginarrow",
-                                     alternative="arrow")
-            elif self.beginarrow is False:
-                self._beginarrow_head = False
-                self._beginarrow_bracket = False
-
-                _api.warn_deprecated('3.5', name="beginarrow",
-                                     alternative="arrow")
 
             if endarrow == ">":
                 self._endarrow_head = True
@@ -3297,18 +3248,6 @@ class ArrowStyle(_Style):
             elif endarrow in ("[", "|"):
                 self._endarrow_head = False
                 self._endarrow_bracket = True
-            elif self.endarrow is True:
-                self._endarrow_head = True
-                self._endarrow_bracket = False
-
-                _api.warn_deprecated('3.5', name="endarrow",
-                                     alternative="arrow")
-            elif self.endarrow is False:
-                self._endarrow_head = False
-                self._endarrow_bracket = False
-
-                _api.warn_deprecated('3.5', name="endarrow",
-                                     alternative="arrow")
 
             super().__init__()
 
@@ -3381,7 +3320,7 @@ class ArrowStyle(_Style):
             return vertices_arrow, codes_arrow
 
         def transmute(self, path, mutation_size, linewidth):
-
+            # docstring inherited
             if self._beginarrow_head or self._endarrow_head:
                 head_length = self.head_length * mutation_size
                 head_width = self.head_width * mutation_size
@@ -3419,22 +3358,20 @@ class ArrowStyle(_Style):
 
             # This simple code will not work if ddx, ddy is greater than the
             # separation between vertices.
-            _path = [Path(np.concatenate([[(x0 + ddxA, y0 + ddyA)],
+            paths = [Path(np.concatenate([[(x0 + ddxA, y0 + ddyA)],
                                           path.vertices[1:-1],
                                           [(x3 + ddxB, y3 + ddyB)]]),
                           path.codes)]
-            _fillable = [False]
+            fills = [False]
 
             if has_begin_arrow:
                 if self.fillbegin:
-                    p = np.concatenate([verticesA, [verticesA[0],
-                                                    verticesA[0]], ])
-                    c = np.concatenate([codesA, [Path.LINETO, Path.CLOSEPOLY]])
-                    _path.append(Path(p, c))
-                    _fillable.append(True)
+                    paths.append(
+                        Path([*verticesA, (0, 0)], [*codesA, Path.CLOSEPOLY]))
+                    fills.append(True)
                 else:
-                    _path.append(Path(verticesA, codesA))
-                    _fillable.append(False)
+                    paths.append(Path(verticesA, codesA))
+                    fills.append(False)
             elif self._beginarrow_bracket:
                 x0, y0 = path.vertices[0]
                 x1, y1 = path.vertices[1]
@@ -3443,19 +3380,17 @@ class ArrowStyle(_Style):
                                                       self.lengthA * scaleA,
                                                       self.angleA)
 
-                _path.append(Path(verticesA, codesA))
-                _fillable.append(False)
+                paths.append(Path(verticesA, codesA))
+                fills.append(False)
 
             if has_end_arrow:
                 if self.fillend:
-                    _fillable.append(True)
-                    p = np.concatenate([verticesB, [verticesB[0],
-                                                    verticesB[0]], ])
-                    c = np.concatenate([codesB, [Path.LINETO, Path.CLOSEPOLY]])
-                    _path.append(Path(p, c))
+                    fills.append(True)
+                    paths.append(
+                        Path([*verticesB, (0, 0)], [*codesB, Path.CLOSEPOLY]))
                 else:
-                    _fillable.append(False)
-                    _path.append(Path(verticesB, codesB))
+                    fills.append(False)
+                    paths.append(Path(verticesB, codesB))
             elif self._endarrow_bracket:
                 x0, y0 = path.vertices[-1]
                 x1, y1 = path.vertices[-2]
@@ -3464,10 +3399,10 @@ class ArrowStyle(_Style):
                                                       self.lengthB * scaleB,
                                                       self.angleB)
 
-                _path.append(Path(verticesB, codesB))
-                _fillable.append(False)
+                paths.append(Path(verticesB, codesB))
+                fills.append(False)
 
-            return _path, _fillable
+            return paths, fills
 
     @_register_style(_style_list, name="-")
     class Curve(_Curve):
@@ -3480,7 +3415,7 @@ class ArrowStyle(_Style):
 
     @_register_style(_style_list, name="<-")
     class CurveA(_Curve):
-        """An arrow with a head at its begin point."""
+        """An arrow with a head at its start point."""
         arrow = "<-"
 
     @_register_style(_style_list, name="->")
@@ -3490,12 +3425,12 @@ class ArrowStyle(_Style):
 
     @_register_style(_style_list, name="<->")
     class CurveAB(_Curve):
-        """An arrow with heads both at the begin and the end point."""
+        """An arrow with heads both at the start and the end point."""
         arrow = "<->"
 
     @_register_style(_style_list, name="<|-")
     class CurveFilledA(_Curve):
-        """An arrow with filled triangle head at the begin."""
+        """An arrow with filled triangle head at the start."""
         arrow = "<|-"
 
     @_register_style(_style_list, name="-|>")
@@ -3632,7 +3567,7 @@ class ArrowStyle(_Style):
 
     @_register_style(_style_list)
     class Simple(_Base):
-        """A simple arrow. Only works with a quadratic Bezier curve."""
+        """A simple arrow. Only works with a quadratic Bézier curve."""
 
         def __init__(self, head_length=.5, head_width=.5, tail_width=.2):
             """
@@ -3652,7 +3587,7 @@ class ArrowStyle(_Style):
             super().__init__()
 
         def transmute(self, path, mutation_size, linewidth):
-
+            # docstring inherited
             x0, y0, x1, y1, x2, y2 = self.ensure_quadratic_bezier(path)
 
             # divide the path into a head and a tail
@@ -3662,8 +3597,7 @@ class ArrowStyle(_Style):
 
             try:
                 arrow_out, arrow_in = \
-                    split_bezier_intersecting_with_closedpath(
-                        arrow_path, in_f, tolerance=0.01)
+                    split_bezier_intersecting_with_closedpath(arrow_path, in_f)
             except NonIntersectingPathException:
                 # if this happens, make a straight line of the head_length
                 # long.
@@ -3712,7 +3646,7 @@ class ArrowStyle(_Style):
 
     @_register_style(_style_list)
     class Fancy(_Base):
-        """A fancy arrow. Only works with a quadratic Bezier curve."""
+        """A fancy arrow. Only works with a quadratic Bézier curve."""
 
         def __init__(self, head_length=.4, head_width=.4, tail_width=.4):
             """
@@ -3732,7 +3666,7 @@ class ArrowStyle(_Style):
             super().__init__()
 
         def transmute(self, path, mutation_size, linewidth):
-
+            # docstring inherited
             x0, y0, x1, y1, x2, y2 = self.ensure_quadratic_bezier(path)
 
             # divide the path into a head and a tail
@@ -3743,7 +3677,7 @@ class ArrowStyle(_Style):
             in_f = inside_circle(x2, y2, head_length)
             try:
                 path_out, path_in = split_bezier_intersecting_with_closedpath(
-                    arrow_path, in_f, tolerance=0.01)
+                    arrow_path, in_f)
             except NonIntersectingPathException:
                 # if this happens, make a straight line of the head_length
                 # long.
@@ -3757,7 +3691,7 @@ class ArrowStyle(_Style):
             # path for head
             in_f = inside_circle(x2, y2, head_length * .8)
             path_out, path_in = split_bezier_intersecting_with_closedpath(
-                arrow_path, in_f, tolerance=0.01)
+                arrow_path, in_f)
             path_tail = path_out
 
             # head
@@ -3775,7 +3709,7 @@ class ArrowStyle(_Style):
             # path for head
             in_f = inside_circle(x0, y0, tail_width * .3)
             path_in, path_out = split_bezier_intersecting_with_closedpath(
-                arrow_path, in_f, tolerance=0.01)
+                arrow_path, in_f)
             tail_start = path_in[-1]
 
             head_right, head_left = head_r, head_l
@@ -3801,9 +3735,9 @@ class ArrowStyle(_Style):
     @_register_style(_style_list)
     class Wedge(_Base):
         """
-        Wedge(?) shape. Only works with a quadratic Bezier curve.  The
-        begin point has a width of the tail_width and the end point has a
-        width of 0. At the middle, the width is shrink_factor*tail_width.
+        Wedge(?) shape. Only works with a quadratic Bézier curve.  The
+        start point has a width of the *tail_width* and the end point has a
+        width of 0. At the middle, the width is *shrink_factor*x*tail_width*.
         """
 
         def __init__(self, tail_width=.3, shrink_factor=0.5):
@@ -3821,7 +3755,7 @@ class ArrowStyle(_Style):
             super().__init__()
 
         def transmute(self, path, mutation_size, linewidth):
-
+            # docstring inherited
             x0, y0, x1, y1, x2, y2 = self.ensure_quadratic_bezier(path)
 
             arrow_path = [(x0, y0), (x1, y1), (x2, y2)]
@@ -3860,12 +3794,8 @@ class FancyBboxPatch(Patch):
         return s % (self._x, self._y, self._width, self._height)
 
     @_docstring.dedent_interpd
-    @_api.make_keyword_only("3.6", name="mutation_scale")
-    @_api.delete_parameter("3.4", "bbox_transmuter", alternative="boxstyle")
-    def __init__(self, xy, width, height,
-                 boxstyle="round", bbox_transmuter=None,
-                 mutation_scale=1, mutation_aspect=1,
-                 **kwargs):
+    def __init__(self, xy, width, height, boxstyle="round", *,
+                 mutation_scale=1, mutation_aspect=1, **kwargs):
         """
         Parameters
         ----------
@@ -3907,27 +3837,12 @@ class FancyBboxPatch(Patch):
         """
 
         super().__init__(**kwargs)
-
-        self._x = xy[0]
-        self._y = xy[1]
+        self._x, self._y = xy
         self._width = width
         self._height = height
-
-        if boxstyle == "custom":
-            _api.warn_deprecated(
-                "3.4", message="Support for boxstyle='custom' is deprecated "
-                "since %(since)s and will be removed %(removal)s; directly "
-                "pass a boxstyle instance as the boxstyle parameter instead.")
-            if bbox_transmuter is None:
-                raise ValueError("bbox_transmuter argument is needed with "
-                                 "custom boxstyle")
-            self._bbox_transmuter = bbox_transmuter
-        else:
-            self.set_boxstyle(boxstyle)
-
+        self.set_boxstyle(boxstyle)
         self._mutation_scale = mutation_scale
         self._mutation_aspect = mutation_aspect
-
         self.stale = True
 
     @_docstring.dedent_interpd
@@ -4008,30 +3923,12 @@ class FancyBboxPatch(Patch):
     def get_path(self):
         """Return the mutated path of the rectangle."""
         boxstyle = self.get_boxstyle()
-        x = self._x
-        y = self._y
-        width = self._width
-        height = self._height
-        m_scale = self.get_mutation_scale()
         m_aspect = self.get_mutation_aspect()
-        # Squeeze the given height by the aspect_ratio.
-        y, height = y / m_aspect, height / m_aspect
-        # Call boxstyle with squeezed height.
-        try:
-            inspect.signature(boxstyle).bind(x, y, width, height, m_scale)
-        except TypeError:
-            # Don't apply aspect twice.
-            path = boxstyle(x, y, width, height, m_scale, 1)
-            _api.warn_deprecated(
-                "3.4", message="boxstyles must be callable without the "
-                "'mutation_aspect' parameter since %(since)s; support for the "
-                "old call signature will be removed %(removal)s.")
-        else:
-            path = boxstyle(x, y, width, height, m_scale)
-        vertices, codes = path.vertices, path.codes
-        # Restore the height.
-        vertices[:, 1] = vertices[:, 1] * m_aspect
-        return Path(vertices, codes)
+        # Call boxstyle with y, height squeezed by aspect_ratio.
+        path = boxstyle(self._x, self._y / m_aspect,
+                        self._width, self._height / m_aspect,
+                        self.get_mutation_scale())
+        return Path(path.vertices * [1, m_aspect], path.codes)  # Unsqueeze y.
 
     # Following methods are borrowed from the Rectangle class.
 
@@ -4250,7 +4147,7 @@ default: 'arc3'
 
     def set_positions(self, posA, posB):
         """
-        Set the begin and end positions of the connecting path.
+        Set the start and end positions of the connecting path.
 
         Parameters
         ----------
@@ -4443,10 +4340,6 @@ default: 'arc3'
             self.get_mutation_aspect())
 
         return _path, fillable
-
-    get_path_in_displaycoord = _api.deprecate_privatize_attribute(
-        "3.5",
-        alternative="self.get_transform().transform_path(self.get_path())")
 
     def draw(self, renderer):
         if not self.get_visible():

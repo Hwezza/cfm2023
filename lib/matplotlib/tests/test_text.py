@@ -339,6 +339,32 @@ def test_set_position():
         assert a + shift_val == b
 
 
+def test_char_index_at():
+    fig = plt.figure()
+    text = fig.text(0.1, 0.9, "")
+
+    text.set_text("i")
+    bbox = text.get_window_extent()
+    size_i = bbox.x1 - bbox.x0
+
+    text.set_text("m")
+    bbox = text.get_window_extent()
+    size_m = bbox.x1 - bbox.x0
+
+    text.set_text("iiiimmmm")
+    bbox = text.get_window_extent()
+    origin = bbox.x0
+
+    assert text._char_index_at(origin - size_i) == 0  # left of first char
+    assert text._char_index_at(origin) == 0
+    assert text._char_index_at(origin + 0.499*size_i) == 0
+    assert text._char_index_at(origin + 0.501*size_i) == 1
+    assert text._char_index_at(origin + size_i*3) == 3
+    assert text._char_index_at(origin + size_i*4 + size_m*3) == 7
+    assert text._char_index_at(origin + size_i*4 + size_m*4) == 8
+    assert text._char_index_at(origin + size_i*4 + size_m*10) == 8
+
+
 @pytest.mark.parametrize('text', ['', 'O'], ids=['empty', 'non-empty'])
 def test_non_default_dpi(text):
     fig, ax = plt.subplots()
@@ -673,6 +699,22 @@ def test_wrap():
                                         'text that should be\n'
                                         'wrapped multiple\n'
                                         'times.')
+
+
+def test_get_window_extent_wrapped():
+    # Test that a long title that wraps to two lines has the same vertical
+    # extent as an explicit two line title.
+
+    fig1 = plt.figure(figsize=(3, 3))
+    fig1.suptitle("suptitle that is clearly too long in this case", wrap=True)
+    window_extent_test = fig1._suptitle.get_window_extent()
+
+    fig2 = plt.figure(figsize=(3, 3))
+    fig2.suptitle("suptitle that is clearly\ntoo long in this case")
+    window_extent_ref = fig2._suptitle.get_window_extent()
+
+    assert window_extent_test.y0 == window_extent_ref.y0
+    assert window_extent_test.y1 == window_extent_ref.y1
 
 
 def test_long_word_wrap():

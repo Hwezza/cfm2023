@@ -69,6 +69,26 @@ def test_date2num_NaT_scalar(units):
     assert np.isnan(tmpl)
 
 
+def test_date2num_masked():
+    # Without tzinfo
+    base = datetime.datetime(2022, 12, 15)
+    dates = np.ma.array([base + datetime.timedelta(days=(2 * i))
+                         for i in range(7)], mask=[0, 1, 1, 0, 0, 0, 1])
+    npdates = mdates.date2num(dates)
+    np.testing.assert_array_equal(np.ma.getmask(npdates),
+                                  (False, True, True, False, False, False,
+                                   True))
+
+    # With tzinfo
+    base = datetime.datetime(2022, 12, 15, tzinfo=mdates.UTC)
+    dates = np.ma.array([base + datetime.timedelta(days=(2 * i))
+                         for i in range(7)], mask=[0, 1, 1, 0, 0, 0, 1])
+    npdates = mdates.date2num(dates)
+    np.testing.assert_array_equal(np.ma.getmask(npdates),
+                                  (False, True, True, False, False, False,
+                                   True))
+
+
 def test_date_empty():
     # make sure we do the right thing when told to plot dates even
     # if no date data has been presented, cf
@@ -614,6 +634,27 @@ def test_concise_formatter_show_offset(t_delta, expected):
     ax.plot([d1, d2], [0, 0])
     fig.canvas.draw()
     assert formatter.get_offset() == expected
+
+
+def test_concise_converter_stays():
+    # This test demonstrates problems introduced by gh-23417 (reverted in gh-25278)
+    # In particular, downstream libraries like Pandas had their designated converters
+    # overridden by actions like setting xlim (or plotting additional points using
+    # stdlib/numpy dates and string date representation, which otherwise work fine with
+    # their date converters)
+    # While this is a bit of a toy example that would be unusual to see it demonstrates
+    # the same ideas (namely having a valid converter already applied that is desired)
+    # without introducing additional subclasses.
+    # See also discussion at gh-25219 for how Pandas was affected
+    x = [datetime.datetime(2000, 1, 1), datetime.datetime(2020, 2, 20)]
+    y = [0, 1]
+    fig, ax = plt.subplots()
+    ax.plot(x, y)
+    # Bypass Switchable date converter
+    ax.xaxis.converter = conv = mdates.ConciseDateConverter()
+    assert ax.xaxis.units is None
+    ax.set_xlim(*x)
+    assert ax.xaxis.converter == conv
 
 
 def test_offset_changes():
@@ -1240,31 +1281,19 @@ def test_change_interval_multiples():
     assert ax.get_xticklabels()[1].get_text() == 'Feb 01 2020'
 
 
-def test_epoch2num():
-    with _api.suppress_matplotlib_deprecation_warning():
+def test_julian2num():
+    with pytest.warns(_api.MatplotlibDeprecationWarning):
         mdates._reset_epoch_test_example()
         mdates.set_epoch('0000-12-31')
-        assert mdates.epoch2num(86400) == 719164.0
-        assert mdates.num2epoch(719165.0) == 86400 * 2
+        # 2440587.5 is julian date for 1970-01-01T00:00:00
+        # https://en.wikipedia.org/wiki/Julian_day
+        assert mdates.julian2num(2440588.5) == 719164.0
+        assert mdates.num2julian(719165.0) == 2440589.5
         # set back to the default
         mdates._reset_epoch_test_example()
         mdates.set_epoch('1970-01-01T00:00:00')
-        assert mdates.epoch2num(86400) == 1.0
-        assert mdates.num2epoch(2.0) == 86400 * 2
-
-
-def test_julian2num():
-    mdates._reset_epoch_test_example()
-    mdates.set_epoch('0000-12-31')
-    # 2440587.5 is julian date for 1970-01-01T00:00:00
-    # https://en.wikipedia.org/wiki/Julian_day
-    assert mdates.julian2num(2440588.5) == 719164.0
-    assert mdates.num2julian(719165.0) == 2440589.5
-    # set back to the default
-    mdates._reset_epoch_test_example()
-    mdates.set_epoch('1970-01-01T00:00:00')
-    assert mdates.julian2num(2440588.5) == 1.0
-    assert mdates.num2julian(2.0) == 2440589.5
+        assert mdates.julian2num(2440588.5) == 1.0
+        assert mdates.num2julian(2.0) == 2440589.5
 
 
 def test_DateLocator():

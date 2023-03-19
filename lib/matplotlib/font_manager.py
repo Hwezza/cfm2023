@@ -186,16 +186,11 @@ def list_fonts(directory, extensions):
     recursively under the directory.
     """
     extensions = ["." + ext for ext in extensions]
-    if sys.platform == 'win32' and directory == win32FontDirectory():
-        return [os.path.join(directory, filename)
-                for filename in os.listdir(directory)
-                if os.path.isfile(filename)]
-    else:
-        return [os.path.join(dirpath, filename)
-                # os.walk ignores access errors, unlike Path.glob.
-                for dirpath, _, filenames in os.walk(directory)
-                for filename in filenames
-                if Path(filename).suffix.lower() in extensions]
+    return [os.path.join(dirpath, filename)
+            # os.walk ignores access errors, unlike Path.glob.
+            for dirpath, _, filenames in os.walk(directory)
+            for filename in filenames
+            if Path(filename).suffix.lower() in extensions]
 
 
 def win32FontDirectory():
@@ -213,82 +208,6 @@ def win32FontDirectory():
             return winreg.QueryValueEx(user, 'Fonts')[0]
     except OSError:
         return os.path.join(os.environ['WINDIR'], 'Fonts')
-
-
-def _win32RegistryFonts(reg_domain, base_dir):
-    r"""
-    Search for fonts in the Windows registry.
-
-    Parameters
-    ----------
-    reg_domain : int
-        The top level registry domain (e.g. HKEY_LOCAL_MACHINE).
-
-    base_dir : str
-        The path to the folder where the font files are usually located (e.g.
-        C:\Windows\Fonts). If only the filename of the font is stored in the
-        registry, the absolute path is built relative to this base directory.
-
-    Returns
-    -------
-    `set`
-        `pathlib.Path` objects with the absolute path to the font files found.
-
-    """
-    import winreg
-    items = set()
-
-    for reg_path in MSFontDirectories:
-        try:
-            with winreg.OpenKey(reg_domain, reg_path) as local:
-                for j in range(winreg.QueryInfoKey(local)[1]):
-                    # value may contain the filename of the font or its
-                    # absolute path.
-                    key, value, tp = winreg.EnumValue(local, j)
-                    if not isinstance(value, str):
-                        continue
-                    try:
-                        # If value contains already an absolute path, then it
-                        # is not changed further.
-                        path = Path(base_dir, value).resolve()
-                    except RuntimeError:
-                        # Don't fail with invalid entries.
-                        continue
-
-                    items.add(path)
-        except (OSError, MemoryError):
-            continue
-
-    return items
-
-
-# Also remove _win32RegistryFonts when this is removed.
-@_api.deprecated("3.5")
-def win32InstalledFonts(directory=None, fontext='ttf'):
-    """
-    Search for fonts in the specified font directory, or use the
-    system directories if none given. Additionally, it is searched for user
-    fonts installed. A list of TrueType font filenames are returned by default,
-    or AFM fonts if *fontext* == 'afm'.
-    """
-    import winreg
-
-    if directory is None:
-        directory = win32FontDirectory()
-
-    fontext = ['.' + ext for ext in get_fontext_synonyms(fontext)]
-
-    items = set()
-
-    # System fonts
-    items.update(_win32RegistryFonts(winreg.HKEY_LOCAL_MACHINE, directory))
-
-    # User fonts
-    for userdir in MSUserFontDirectories:
-        items.update(_win32RegistryFonts(winreg.HKEY_CURRENT_USER, userdir))
-
-    # Keep only paths with matching file extension.
-    return [str(path) for path in items if path.suffix.lower() in fontext]
 
 
 def _get_win32_installed_fonts():
@@ -337,14 +256,6 @@ def _get_fontconfig_fonts():
     return [Path(os.fsdecode(fname)) for fname in out.split(b'\n')]
 
 
-@_api.deprecated("3.5")
-def get_fontconfig_fonts(fontext='ttf'):
-    """List font filenames known to ``fc-list`` having the given extension."""
-    fontext = ['.' + ext for ext in get_fontext_synonyms(fontext)]
-    return [str(path) for path in _get_fontconfig_fonts()
-            if path.suffix.lower() in fontext]
-
-
 def findSystemFonts(fontpaths=None, fontext='ttf'):
     """
     Search for fonts in the specified font paths.  If no paths are
@@ -359,7 +270,7 @@ def findSystemFonts(fontpaths=None, fontext='ttf'):
     if fontpaths is None:
         if sys.platform == 'win32':
             installed_fonts = _get_win32_installed_fonts()
-            fontpaths = MSUserFontDirectories + [win32FontDirectory()]
+            fontpaths = []
         else:
             installed_fonts = _get_fontconfig_fonts()
             if sys.platform == 'darwin':
@@ -642,7 +553,7 @@ class FontProperties:
       'roman', 'semibold', 'demibold', 'demi', 'bold', 'heavy',
       'extra bold', 'black'. Default: :rc:`font.weight`
 
-    - size: Either an relative value of 'xx-small', 'x-small',
+    - size: Either a relative value of 'xx-small', 'x-small',
       'small', 'medium', 'large', 'x-large', 'xx-large' or an
       absolute font size, e.g., 10. Default: :rc:`font.size`
 
@@ -803,7 +714,7 @@ class FontProperties:
 
     def set_family(self, family):
         """
-        Change the font family.  May be either an alias (generic name
+        Change the font family.  Can be either an alias (generic name
         is CSS parlance), such as: 'serif', 'sans-serif', 'cursive',
         'fantasy', or 'monospace', a real font name or a list of real
         font names.  Real font names are not supported when
@@ -901,8 +812,8 @@ class FontProperties:
         ----------
         size : float or {'xx-small', 'x-small', 'small', 'medium', \
 'large', 'x-large', 'xx-large'}, default: :rc:`font.size`
-            If float, the font size in points. The string values denote sizes
-            relative to the default font size.
+            If a float, the font size in points. The string values denote
+            sizes relative to the default font size.
         """
         if size is None:
             size = mpl.rcParams['font.size']
@@ -1071,7 +982,7 @@ class FontManager:
     font is returned.
     """
     # Increment this version number whenever the font cache data
-    # format or behavior has changed and requires a existing font
+    # format or behavior has changed and requires an existing font
     # cache files to be rebuilt.
     __version__ = 330
 
@@ -1084,7 +995,7 @@ class FontManager:
         # Create list of font paths.
         paths = [cbook._get_data_path('fonts', subdir)
                  for subdir in ['ttf', 'afm', 'pdfcorefonts']]
-        _log.debug('font search path %s', str(paths))
+        _log.debug('font search path %s', paths)
 
         self.defaultFamily = {
             'ttf': 'DejaVu Sans',
@@ -1308,7 +1219,7 @@ class FontManager:
             If given, only search this directory and its subdirectories.
 
         fallback_to_default : bool
-            If True, will fallback to the default font family (usually
+            If True, will fall back to the default font family (usually
             "DejaVu Sans" or "Helvetica") if the first lookup hard-fails.
 
         rebuild_if_missing : bool
@@ -1378,7 +1289,7 @@ class FontManager:
             If given, only search this directory and its subdirectories.
 
         fallback_to_default : bool
-            If True, will fallback to the default font family (usually
+            If True, will fall back to the default font family (usually
             "DejaVu Sans" or "Helvetica") if none of the families were found.
 
         rebuild_if_missing : bool
@@ -1395,7 +1306,7 @@ class FontManager:
         -----
         This is an extension/wrapper of the original findfont API, which only
         returns a single font for given font properties. Instead, this API
-        returns an dict containing multiple fonts and their filepaths
+        returns a dict containing multiple fonts and their filepaths
         which closely match the given font properties.  Since this internally
         uses the original API, there's no change to the logic of performing the
         nearest neighbor search.  See `findfont` for more details.

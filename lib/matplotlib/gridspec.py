@@ -211,8 +211,8 @@ class GridSpecBase:
         or create a new one
         """
         for ax in figure.get_axes():
-            if hasattr(ax, 'get_subplotspec'):
-                gs = ax.get_subplotspec().get_gridspec()
+            gs = ax.get_gridspec()
+            if gs is not None:
                 if hasattr(gs, 'get_topmost_subplotspec'):
                     # This is needed for colorbar gridspec layouts.
                     # This is probably OK because this whole logic tree
@@ -276,21 +276,12 @@ class GridSpecBase:
             raise ValueError("GridSpec.subplots() only works for GridSpecs "
                              "created with a parent figure")
 
-        if isinstance(sharex, bool):
+        if not isinstance(sharex, str):
             sharex = "all" if sharex else "none"
-        if isinstance(sharey, bool):
+        if not isinstance(sharey, str):
             sharey = "all" if sharey else "none"
-        # This check was added because it is very easy to type
-        # `subplots(1, 2, 1)` when `subplot(1, 2, 1)` was intended.
-        # In most cases, no error will ever occur, but mysterious behavior
-        # will result because what was intended to be the subplot index is
-        # instead treated as a bool for sharex.  This check should go away
-        # once sharex becomes kwonly.
-        if isinstance(sharex, Integral):
-            _api.warn_external(
-                "sharex argument to subplots() was an integer.  Did you "
-                "intend to use subplot() (without 's')?")
-        _api.check_in_list(["all", "row", "col", "none"],
+
+        _api.check_in_list(["all", "row", "col", "none", False, True],
                            sharex=sharex, sharey=sharey)
         if subplot_kw is None:
             subplot_kw = {}
@@ -413,7 +404,7 @@ class GridSpec(GridSpecBase):
                 raise AttributeError(f"{k} is an unknown keyword")
         for figmanager in _pylab_helpers.Gcf.figs.values():
             for ax in figmanager.canvas.figure.axes:
-                if isinstance(ax, mpl.axes.SubplotBase):
+                if ax.get_subplotspec() is not None:
                     ss = ax.get_subplotspec().get_topmost_subplotspec()
                     if ss.get_gridspec() == self:
                         ax._set_position(
@@ -456,6 +447,10 @@ class GridSpec(GridSpecBase):
 
         Parameters
         ----------
+        figure : `.Figure`
+            The figure.
+        renderer :  `.RendererBase` subclass, optional
+            The renderer to be used.
         pad : float
             Padding between the figure edge and the edges of subplots, as a
             fraction of the font-size.
@@ -467,20 +462,12 @@ class GridSpec(GridSpecBase):
             coordinates that the whole subplots area (including labels) will
             fit into. Default (None) is the whole figure.
         """
-
-        subplotspec_list = _tight_layout.get_subplotspec_list(
-            figure.axes, grid_spec=self)
-        if None in subplotspec_list:
-            _api.warn_external("This figure includes Axes that are not "
-                               "compatible with tight_layout, so results "
-                               "might be incorrect.")
-
         if renderer is None:
             renderer = figure._get_renderer()
-
         kwargs = _tight_layout.get_tight_layout_figure(
-            figure, figure.axes, subplotspec_list, renderer,
-            pad=pad, h_pad=h_pad, w_pad=w_pad, rect=rect)
+            figure, figure.axes,
+            _tight_layout.get_subplotspec_list(figure.axes, grid_spec=self),
+            renderer, pad=pad, h_pad=h_pad, w_pad=w_pad, rect=rect)
         if kwargs:
             self.update(**kwargs)
 
@@ -546,17 +533,17 @@ class SubplotSpec:
 
     .. note::
 
-        Likely, you'll never instantiate a `SubplotSpec` yourself. Instead you
-        will typically obtain one from a `GridSpec` using item-access.
+        Likely, you will never instantiate a `SubplotSpec` yourself. Instead,
+        you will typically obtain one from a `GridSpec` using item-access.
 
     Parameters
     ----------
     gridspec : `~matplotlib.gridspec.GridSpec`
         The GridSpec, which the subplot is referencing.
     num1, num2 : int
-        The subplot will occupy the num1-th cell of the given
-        gridspec.  If num2 is provided, the subplot will span between
-        num1-th cell and num2-th cell *inclusive*.
+        The subplot will occupy the *num1*-th cell of the given
+        *gridspec*.  If *num2* is provided, the subplot will span between
+        *num1*-th cell and *num2*-th cell **inclusive**.
 
         The index starts from 0.
     """
@@ -595,8 +582,7 @@ class SubplotSpec:
         elif len(args) == 3:
             rows, cols, num = args
         else:
-            raise TypeError(f"subplot() takes 1 or 3 positional arguments but "
-                            f"{len(args)} were given")
+            raise _api.nargs_error("subplot", takes="1 or 3", given=len(args))
 
         gs = GridSpec._check_gridspec_exists(figure, rows, cols)
         if gs is None:
@@ -610,7 +596,9 @@ class SubplotSpec:
         else:
             if not isinstance(num, Integral) or num < 1 or num > rows*cols:
                 raise ValueError(
-                    f"num must be 1 <= num <= {rows*cols}, not {num!r}")
+                    f"num must be an integer with 1 <= num <= {rows*cols}, "
+                    f"not {num!r}"
+                )
             i = j = num
         return gs[i-1:j]
 
@@ -719,7 +707,7 @@ class SubplotSpec:
             Number of rows in grid.
 
         ncols : int
-            Number or columns in grid.
+            Number of columns in grid.
 
         Returns
         -------
