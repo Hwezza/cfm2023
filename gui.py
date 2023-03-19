@@ -5,7 +5,7 @@ if platform == "darwin":
     sys.path.insert(1, 'macLib')
 elif platform == "win32":
     # Windows
-    sys.path.insert(1, 'winLibib')
+    sys.path.insert(1, 'winLib')
 import matplotlib as mtplt
 from matplotlib import pyplot
 import tkinter
