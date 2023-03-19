@@ -27,18 +27,18 @@ Classifier: Programming Language :: Python :: 3.11
 Classifier: Topic :: Scientific/Engineering :: Visualization
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
-License-File: LICENSE/LICENSE
-License-File: LICENSE/LICENSE_AMSFONTS
-License-File: LICENSE/LICENSE_BAKOMA
-License-File: LICENSE/LICENSE_CARLOGO
-License-File: LICENSE/LICENSE_COLORBREWER
-License-File: LICENSE/LICENSE_COURIERTEN
-License-File: LICENSE/LICENSE_JSXTOOLS_RESIZE_OBSERVER
-License-File: LICENSE/LICENSE_QHULL
-License-File: LICENSE/LICENSE_QT4_EDITOR
-License-File: LICENSE/LICENSE_SOLARIZED
-License-File: LICENSE/LICENSE_STIX
-License-File: LICENSE/LICENSE_YORICK
+License-File: LICENSE\LICENSE
+License-File: LICENSE\LICENSE_AMSFONTS
+License-File: LICENSE\LICENSE_BAKOMA
+License-File: LICENSE\LICENSE_CARLOGO
+License-File: LICENSE\LICENSE_COLORBREWER
+License-File: LICENSE\LICENSE_COURIERTEN
+License-File: LICENSE\LICENSE_JSXTOOLS_RESIZE_OBSERVER
+License-File: LICENSE\LICENSE_QHULL
+License-File: LICENSE\LICENSE_QT4_EDITOR
+License-File: LICENSE\LICENSE_SOLARIZED
+License-File: LICENSE\LICENSE_STIX
+License-File: LICENSE\LICENSE_YORICK
 Requires-Dist: contourpy (>=1.0.1)
 Requires-Dist: cycler (>=0.10)
 Requires-Dist: fonttools (>=4.22.0)

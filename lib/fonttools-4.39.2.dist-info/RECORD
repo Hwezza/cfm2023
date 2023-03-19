@@ -1,7 +1,7 @@
-../../bin/fonttools,sha256=of2bIsqhCPJbYtVjCFcyhQ-LHRucuFJyIgNoAkwbHag,266
-../../bin/pyftmerge,sha256=IXYKEg6wqi0ABiVnLbfbDCu6yws9mfFoCg1ZiqDC9GM,263
-../../bin/pyftsubset,sha256=b6bPOs134tAI6GafLvAVUzmeU-NyVcB7nVWVW7xN2y8,264
-../../bin/ttx,sha256=IK4ii_ZV49Lk_6VZ_Sm7g8Vxm0_M7o7c4qTeCX812ME,261
+../../bin/fonttools.exe,sha256=dx7mZ7qqyOQdGEoYx7pKGLYkomn6HN1R2pMTz7tb5O8,108394
+../../bin/pyftmerge.exe,sha256=QHL2lmAqFnMZKQ8mLlkfWeZ8Oblk-Ata-UX7Kyko0pE,108391
+../../bin/pyftsubset.exe,sha256=k4v8PTp1uQGrrE-41Gtab8hrKTBbTLRoukxfalRz4aY,108392
+../../bin/ttx.exe,sha256=mbIqB_2r26hIH25-LlK2qc7D6PkzPQX2LdIV4fIGzeY,108389
 ../../share/man/man1/ttx.1,sha256=cLbm_pOOj1C76T2QXvDxzwDj9gk-GTd5RztvTMsouFw,5377
 fontTools/__init__.py,sha256=UlkxGATFcWUITxZkQvyGNywbYN3LITxpUQ4-auAQ4v0,183
 fontTools/__main__.py,sha256=VjkGh1UD-i1zTDA1dXo1uecSs6PxHdGQ5vlCk_mCCYs,925
