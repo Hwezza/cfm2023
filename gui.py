@@ -22,19 +22,7 @@ class guibrain:
         main_window.mainloop()
 
 
-    ### Program 1 (ParticleSim)
-    '''
-    def open_program1(self):
-        self.program1_window = tkinter.Tk(screenName=None,  baseName=None,  className='Window',  useTk=1)
-        self.program1_window.title("Particle Simulation")
-        self.program1_window.geometry("800x450")
-
-        start_button = tkinter.Button(self.program1_window, text = "Start!", width = 10, height = 5, command = self.show_data, background="grey")
-        start_button.place(x = 20, y = 20)
-
-        self.program1_window.mainloop()
-    '''
-
+  
     def show_data(number: int):
         from Brain import mainBrain
         selected_particle = mainBrain.particle_list[number]
@@ -89,8 +77,6 @@ class guibrain:
 
         self.write_tree_headings()
         self.write_experiments_to_tree()
-
-        #self.tree.grid(row=0, column=0, sticky='nsew')
 
 
         scrollbar = ttk.Scrollbar(self.choiceWindow, orient=tkinter.VERTICAL, command=self.tree.yview)

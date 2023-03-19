@@ -12,7 +12,6 @@ class PyBrain:
         self.Gui.open_menu()
     
     def option1_selected(self):
-        #print("open option1")
         self.Gui.open_program1
     
     def open_csv(self):
@@ -71,11 +70,12 @@ class PyBrain:
     
         print("Particle LIST:",self.particle_list)
 
+    # initiate after load
     def startup(self):
         self.open_csv()
         self.import_experiments()
     
-    #insert calculations:
+    #import calculations from button press in gui:
     def calculateFor(self, number:int):
         results = []
         print(self.particle_list)
@@ -98,7 +98,7 @@ class PyBrain:
         v_z = v0_z
 
 
-        #particle dimensions/environment
+        #importing particle dimensions/environment from particle class
         v: int
         m = particle.mass
         g = particle.gravity
@@ -141,24 +141,5 @@ class PyBrain:
         solution_for_t = solution.sol(t)
         print("Returned SOLUTION :",solution_for_t)
         return solution, solution_for_t
-
-
-        ## to evaluate
-        '''
-        particle.a_x == (((-particle.air_density * particle.air_resistance * particle.crossSection)
-                               * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass) * particle.xdot
-        particle.a_z == ((((-particle.air_density * particle.air_resistance * particle.crossSection)
-                               * np.sqrt(particle.xdot**2 + particle.zdot**2))/particle.mass)* particle.zdot
-                                 - (particle.mass*particle.gravity))
-        '''
-
-    '''
-    def speedsAndAccelerations(t, speeds):
-        self.particle.a_x = (-0.5 * Cd * d * crossSection * u *)
-
-        solution = solve_ivp()
-    '''
-
-        ###
 
 mainBrain = PyBrain()
