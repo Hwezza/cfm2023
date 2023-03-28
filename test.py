@@ -19,12 +19,12 @@ def refreshData():
         writer.writerow(columns)
         for i in range(1,20):
             name = "Example"+str(i)
-            u = randint(1,200)
-            x = randint(1,200)
-            z = randint(1,200)
+            u = randint(1,200)/10
+            x = randint(1,200)/10
+            z = randint(1,200)/10
             angle = round(random.uniform(0, pi/2), 2)
-            mass = randint(1,200)
-            diam = randint(1,300)
+            mass = randint(1,200)/10
+            diam = randint(1,300)/10
             air_res = randint(1,300)/10
             air_dens = randint(1,200)/10
             grav = randint(10,1000)/100

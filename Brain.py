@@ -1,3 +1,4 @@
+# Find the system used by the user
 import sys
 from sys import platform
 if platform == "darwin":
