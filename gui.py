@@ -1,7 +1,7 @@
+import matplotlib as mtplt
+from matplotlib import pyplot
 import tkinter
 from tkinter import ttk
-import matplotlib as mtplt
-
 
 ### Main window
 class guibrain:
@@ -48,13 +48,19 @@ class guibrain:
         z = result[1][2]
         print("graphing")
         mtplt.use('TkAgg')
-        mtplt.pyplot.plot(x,z)
+        pyplot.plot(x,z)
         print("Update Results:")
-        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(dx = x[-1], tx = result[0].t_events[0][0], dz = max(z), tz = result[0].t_events[1][0])
+        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(dx = x[-1],
+                                                                                 tx = result[0].t_events[0][0], dz = max(z),
+                                                                                   tz = result[0].t_events[1][0])
         print("results updated")
         self.write_experiments_to_tree()
         print("Written to tree")
-        mtplt.pyplot.show()
+        pyplot.xlabel("Distance (m)")
+        pyplot.ylabel("Height (m)")
+        pyplot.title("Particle Graph")
+        
+        pyplot.show()
         print("graph displayed")
 
         

@@ -1,12 +1,22 @@
+# Find the system used by the user
+import sys
+from sys import platform
+if platform == "darwin":
+    # OS X
+    sys.path.insert(1, 'macLib')
+elif platform == "win32":
+    # Windows
+    sys.path.insert(1, 'winLibib')
+
 import gui
 import numpy as np
 from scipy.integrate import solve_ivp
-from matplotlib import pyplot
 
 class PyBrain:
     running = True
     raw_data = []
     Gui = gui.guibrain()
+
 
     def menu(self):
         self.Gui.open_menu()

@@ -1,6 +1,7 @@
 # Group Project - Computing For Mathematics:
 
 Submission: 2023
+Group: The Limit Does Not Exist
 
 <https://github.com/Hwezza/cfm2023>
 
@@ -18,6 +19,6 @@ Toby Soden
 Insert data into cfmTestSpreadsheet.csv
 Run Program Main.py
 Select desired option
-Follow instructions to use
+Follow displayed instructions to use
 
 ## Full documentation:

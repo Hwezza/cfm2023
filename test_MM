@@ -7,8 +7,12 @@ def test_MM():
 
     guibrain.open_menu()
     guibrain.firstoption
-    assert type(guibrain.first_option)==tkinter.Tk, "good"
+    assert type(guibrain.first_option)==tkinter.Button, "good"
+    
 
     guibrain.show_data()
     guibrain.selectedparticle
     assert selected_particle() == mainBrain.particle_list[number], "nice"
+
+    guibrain.write_experiments_to_tree()
+    guibrain.
