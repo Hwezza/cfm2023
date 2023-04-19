@@ -6,9 +6,14 @@ if platform == "darwin":
     sys.path.insert(1, 'macLib')
 elif platform == "win32":
     # Windows
-    sys.path.insert(1, 'winLibib')
+    sys.path.insert(1, 'winLib')
+
 
 def refreshData():
+    # create example data in the test spreadsheet
+    # this fills cfmTestSpreadsheet with random floats  within a specified range
+
+
     import csv
     from numpy import pi
     import random
@@ -17,7 +22,7 @@ def refreshData():
     with open('cfmTestSpreadsheet.csv', 'w') as test_file:
         writer = csv.writer(test_file)
         writer.writerow(columns)
-        for i in range(1,20):
+        for i in range(1,21):
             name = "Example"+str(i)
             u = randint(1,200)/10
             x = randint(1,200)/10
@@ -29,4 +34,3 @@ def refreshData():
             air_dens = randint(1,200)/10
             grav = randint(10,1000)/100
             writer.writerow((name, u, x, z, angle, mass, diam, air_res, air_dens, grav))
-
