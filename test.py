@@ -25,4 +25,24 @@ def create_test_data():
                 writer.writerow((name, u, x, z, angle, mass, diam, air_res, air_dens, grav))
 
 
+    import numpy as np
+    import absorption
+
+
+def test_MM():
+    import gui
+    guibrain = gui.guibrain()
+    guibrain.open_menu()
+    guibrain.mainwindow
+    assert type(guibrain.main_window)==True , "good"
+
+def test_all():
+    return 0
+
+"""
+This tests all of the code in the Brain of the code
+"""
+
+
+
 
