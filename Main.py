@@ -7,6 +7,5 @@ pyBrain = Brain.mainBrain
 pyBrain.startup()
 
 # Menu
-print(pyBrain.running)
 pyBrain.menu()
 
