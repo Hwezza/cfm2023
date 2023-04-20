@@ -9,8 +9,8 @@ from tkinter import ttk
 class guibrain:
     program1_window: tkinter.Tk
     choiceWindow: tkinter.Tk
-    tree: ttk.Treeview
-
+    main_window: tkinter.Tk
+    tree : ttk.Treeview
     def open_menu(self):
         main_window = tkinter.Tk(
             screenName=None,  baseName=None,  className='Window',  useTk=1)

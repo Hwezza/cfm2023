@@ -34,3 +34,6 @@ def refreshData():
             air_dens = randint(1,200)/10
             grav = randint(10,1000)/100
             writer.writerow((name, u, x, z, angle, mass, diam, air_res, air_dens, grav))
+
+
+
