@@ -1,10 +1,12 @@
 # Main File
-import Brain
+import pyBrain.Brain as Brain
+from gui import guibrain
 
 pyBrain = Brain.mainBrain
+path = 'cfmTestSpreadsheet.csv'
 
 # startup
-pyBrain.startup()
+pyBrain.openDataFromPath(path)
 
 # Menu
-pyBrain.menu()
+guibrain.open_menu()

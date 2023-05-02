@@ -1,39 +1,19 @@
-# Find the system used by the user
-import sys
-from sys import platform
-if platform == "darwin":
-    # OS X
-    sys.path.insert(1, 'macLib')
-elif platform == "win32":
-    # Windows
-    sys.path.insert(1, 'winLibib')
-
-import gui
 import numpy as np
 from scipy.integrate import solve_ivp
-
-
 class PyBrain:
     running = True
-    raw_data = []
-    Gui = gui.guibrain()
 
-    def menu(self):
-        self.Gui.open_menu()
 
-    def option1_selected(self):
-        self.Gui.open_program1
-
-    def open_csv(self):
+    def open_csv(self, path):
         import csv
         data = []
-        with open('cfmtestSpreadsheet.csv') as csv_file:
+        with open(path) as csv_file:
             csv_read = csv.reader(csv_file, delimiter=',')
 
             for i in csv_file:
                 data.append(i.strip().split(","))
 
-        self.raw_data = data
+        return data
 
     class ParticleSimulation:
         # Establish Variables
@@ -62,8 +42,8 @@ class PyBrain:
 
     particle_list: list[ParticleSimulation] = []
 
-    def import_experiments(self):
-        raw_data = self.raw_data
+    def import_experiments(self, raw_data:list) ->list[ParticleSimulation]:
+        raw_data = raw_data
         print("Raw DATA:", raw_data)
         for i in range(1, len(raw_data)):
             try:
@@ -74,15 +54,16 @@ class PyBrain:
                                                                   air_density=raw_data[i][8], gravity=raw_data[i][9]))
             except Exception as error:
                 print('error with data line', i, ':', error)
+        return self.particle_list
 
-        print("Particle LIST:", self.particle_list)
+
 
     # initiate after load
-    def startup(self):
-        self.open_csv()
-        self.import_experiments()
+    def openDataFromPath(self,path)->list[ParticleSimulation]:
+        print("GO")
+        return self.import_experiments(self.open_csv(path))
 
-    # import calculations from button press in gui:
+    # import calculations:
     def calculateFor(self, number: int):
         results = []
         print(self.particle_list)
