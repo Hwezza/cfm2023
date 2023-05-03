@@ -1,13 +1,14 @@
 import numpy as np
 from scipy.integrate import solve_ivp
+
+
 class PyBrain:
     running = True
 
-    
     def open_csv(self, path):
         """
         This function opens a CSV file and returns its contents as a list of lists.
-        
+
         :param path: The path parameter is a string that represents the file path of the CSV file that
         needs to be opened and read
         :return: a list of lists, where each inner list represents a row of data from the CSV file. The
@@ -47,7 +48,7 @@ class PyBrain:
             """
             The function updates the results of time in air, distance travelled, time to maximum height, and
             maximum height.
-            
+
             :param tx: The time the object spent in the air
             :param dx: The distance travelled by an object in the x-direction
             :param dz: dz is the maximum height reached by an object during its flight. It is one of the
@@ -70,11 +71,11 @@ class PyBrain:
 
     particle_list: list[ParticleSimulation] = []
 
-    def import_experiments(self, raw_data:list) ->list[ParticleSimulation]:
+    def import_experiments(self, raw_data: list) -> list[ParticleSimulation]:
         """
         This function imports raw data and creates a list of ParticleSimulation objects based on the
         data.
-        
+
         :param raw_data: A list of lists containing raw data for particle simulations. Each inner list
         represents a single simulation and contains the following data in order: name, initial velocity
         (u), initial horizontal position (x), initial vertical position (z), launch angle (angle), mass,
@@ -95,14 +96,12 @@ class PyBrain:
                 print('error with data line', i, ':', error)
         return self.particle_list
 
-
-
     # initiate after load
-    def openDataFromPath(self,path)->list[ParticleSimulation]:
+    def openDataFromPath(self, path) -> list[ParticleSimulation]:
         """
         This function opens a CSV file from a given path and imports it as a list of ParticleSimulation
         objects.
-        
+
         :param path: The `path` parameter is a string that represents the file path of a CSV file containing
         data for particle simulations. The `openDataFromPath` method takes this path as input and returns a
         list of `ParticleSimulation` objects that are created from the data in the CSV file
@@ -115,7 +114,7 @@ class PyBrain:
         """
         This function calculates the motion of a particle in the presence of air resistance and gravity
         and returns the solution and solution for a given time.
-        
+
         :param number: The parameter `number` is an integer representing the index of a particle in a
         list of particles. This particle will be used to calculate its motion in the presence of air
         resistance and gravity
@@ -160,7 +159,7 @@ class PyBrain:
             """
             The function calculates the speed and acceleration of an object based on its initial velocity and
             time.
-            
+
             :param t: It is a variable representing time
             :param u: The parameter u is a tuple containing the initial values of the horizontal position (x),
             horizontal velocity (v_x), vertical position (z), and vertical velocity (v_z) of an object
