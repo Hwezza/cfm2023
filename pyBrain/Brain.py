@@ -3,8 +3,17 @@ from scipy.integrate import solve_ivp
 class PyBrain:
     running = True
 
-
+    
     def open_csv(self, path):
+        """
+        This function opens a CSV file and returns its contents as a list of lists.
+        
+        :param path: The path parameter is a string that represents the file path of the CSV file that
+        needs to be opened and read
+        :return: a list of lists, where each inner list represents a row of data from the CSV file. The
+        data is obtained by reading the CSV file located at the given path and parsing it using the csv
+        module. The resulting list of lists is then returned.
+        """
         import csv
         data = []
         with open(path) as csv_file:
@@ -15,6 +24,8 @@ class PyBrain:
 
         return data
 
+   # The ParticleSimulation class defines variables and methods for simulating the motion of a
+   # particle with given initial conditions and air resistance.
     class ParticleSimulation:
         # Establish Variables
         drag_coeff = 0.47
@@ -33,9 +44,26 @@ class PyBrain:
             self.gravity = float(gravity)
 
         def updateResults(self, tx, dx, dz, tz):
+            """
+            The function updates the results of time in air, distance travelled, time to maximum height, and
+            maximum height.
+            
+            :param tx: The time the object spent in the air
+            :param dx: The distance travelled by an object in the x-direction
+            :param dz: dz is the maximum height reached by an object during its flight. It is one of the
+            parameters used to update the results of an object's flight
+            :param tz: The parameter `tz` likely stands for "time to reach maximum height" and represents the
+            amount of time it takes for the object to reach its maximum height during its flight
+            """
             self.time_in_air, self.dist_travelled, self.time_to_max, self.max_z = tx, dx, tz, dz
 
         def getData(self) -> list:
+            """
+            The function `getData` returns a list of attributes for an object.
+            :return: A list containing the values of various attributes of an object, including its name,
+            position, angle, mass, diameter, air resistance, air density, gravity, time in air, and maximum
+            height reached.
+            """
             return [self.name, self.u, self.x, self.z, self.angle, self.mass,
                     self.diam, self.air_resistance, self.air_density, self.gravity,
                     self.time_in_air, self.max_z]
@@ -43,6 +71,17 @@ class PyBrain:
     particle_list: list[ParticleSimulation] = []
 
     def import_experiments(self, raw_data:list) ->list[ParticleSimulation]:
+        """
+        This function imports raw data and creates a list of ParticleSimulation objects based on the
+        data.
+        
+        :param raw_data: A list of lists containing raw data for particle simulations. Each inner list
+        represents a single simulation and contains the following data in order: name, initial velocity
+        (u), initial horizontal position (x), initial vertical position (z), launch angle (angle), mass,
+        diameter, air resistance coefficient, air density
+        :type raw_data: list
+        :return: a list of ParticleSimulation objects.
+        """
         raw_data = raw_data
         print("Raw DATA:", raw_data)
         for i in range(1, len(raw_data)):
@@ -60,11 +99,32 @@ class PyBrain:
 
     # initiate after load
     def openDataFromPath(self,path)->list[ParticleSimulation]:
-        print("GO")
+        """
+        This function opens a CSV file from a given path and imports it as a list of ParticleSimulation
+        objects.
+        
+        :param path: The `path` parameter is a string that represents the file path of a CSV file containing
+        data for particle simulations. The `openDataFromPath` method takes this path as input and returns a
+        list of `ParticleSimulation` objects that are created from the data in the CSV file
+        :return: A list of ParticleSimulation objects.
+        """
         return self.import_experiments(self.open_csv(path))
 
     # import calculations:
     def calculateFor(self, number: int):
+        """
+        This function calculates the motion of a particle in the presence of air resistance and gravity
+        and returns the solution and solution for a given time.
+        
+        :param number: The parameter `number` is an integer representing the index of a particle in a
+        list of particles. This particle will be used to calculate its motion in the presence of air
+        resistance and gravity
+        :type number: int
+        :return: The function `calculateFor` returns two values: `solution`, which is the solution to the
+        system of differential equations for the motion of a particle in the presence of air resistance
+        and gravity, and `solution_for_t`, which is the solution to the system of differential equations
+        for the motion of the particle at specific times `t`.
+        """
         results = []
         print(self.particle_list)
         print(number)
@@ -97,6 +157,16 @@ class PyBrain:
         starting_values = (0, v0_x, 0, v0_z)
 
         def speeds_calculation(t, u):
+            """
+            The function calculates the speed and acceleration of an object based on its initial velocity and
+            time.
+            
+            :param t: It is a variable representing time
+            :param u: The parameter u is a tuple containing the initial values of the horizontal position (x),
+            horizontal velocity (v_x), vertical position (z), and vertical velocity (v_z) of an object
+            :return: The function `speeds_calculation` returns a tuple containing the values of `v_x`, `a_x`,
+            `v_z`, and `a_z`.
+            """
             x = u[0]
             v_x = u[1]
             z = u[2]
@@ -118,12 +188,13 @@ class PyBrain:
         def z_max(t, u):
             return u[3]
 
+       # `solve_ivp` is a function from the `scipy.integrate` module that solves initial value
+       # problems (IVPs) for systems of first-order ordinary differential equations (ODEs). In this
+       # case, it is being used to solve for the motion of a particle in the presence of air
+       # resistance and gravity.
         solution = solve_ivp(speeds_calculation, (t0, tf),
                              starting_values, dense_output=1, events=(hit_ground, z_max))
-        print("Solution =", solution)
-        print(solution.t_events[0])
         t = np.linspace(0, solution.t_events[0][0], 100)
-        print("times:", t)
 
         solution_for_t = solution.sol(t)
         print("Returned SOLUTION :", solution_for_t)
