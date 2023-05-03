@@ -16,23 +16,36 @@ class PyBrain:
         module. The resulting list of lists is then returned.
         """
         import csv
+
         data = []
         with open(path) as csv_file:
-            csv_read = csv.reader(csv_file, delimiter=',')
+            csv_read = csv.reader(csv_file, delimiter=",")
 
             for i in csv_file:
                 data.append(i.strip().split(","))
 
         return data
 
-   # The ParticleSimulation class defines variables and methods for simulating the motion of a
-   # particle with given initial conditions and air resistance.
+    # The ParticleSimulation class defines variables and methods for simulating the motion of a
+    # particle with given initial conditions and air resistance.
     class ParticleSimulation:
         # Establish Variables
         drag_coeff = 0.47
         time_in_air, dist_travelled, time_to_max, max_z = "N/A", "N/A", "N/A", "N/A"
 
-        def __init__(self, name: str, u, x, z, angle, mass, diam, air_resistance, air_density, gravity):
+        def __init__(
+            self,
+            name: str,
+            u,
+            x,
+            z,
+            angle,
+            mass,
+            diam,
+            air_resistance,
+            air_density,
+            gravity,
+        ):
             self.name = str(name)
             self.u = float(u)
             self.x = float(x)
@@ -56,7 +69,12 @@ class PyBrain:
             :param tz: The parameter `tz` likely stands for "time to reach maximum height" and represents the
             amount of time it takes for the object to reach its maximum height during its flight
             """
-            self.time_in_air, self.dist_travelled, self.time_to_max, self.max_z = tx, dx, tz, dz
+            self.time_in_air, self.dist_travelled, self.time_to_max, self.max_z = (
+                tx,
+                dx,
+                tz,
+                dz,
+            )
 
         def getData(self) -> list:
             """
@@ -65,9 +83,20 @@ class PyBrain:
             position, angle, mass, diameter, air resistance, air density, gravity, time in air, and maximum
             height reached.
             """
-            return [self.name, self.u, self.x, self.z, self.angle, self.mass,
-                    self.diam, self.air_resistance, self.air_density, self.gravity,
-                    self.time_in_air, self.max_z]
+            return [
+                self.name,
+                self.u,
+                self.x,
+                self.z,
+                self.angle,
+                self.mass,
+                self.diam,
+                self.air_resistance,
+                self.air_density,
+                self.gravity,
+                self.time_in_air,
+                self.max_z,
+            ]
 
     particle_list: list[ParticleSimulation] = []
 
@@ -87,13 +116,22 @@ class PyBrain:
         print("Raw DATA:", raw_data)
         for i in range(1, len(raw_data)):
             try:
-                self.particle_list.append(self.ParticleSimulation(name=raw_data[i][0], u=raw_data[i][1],
-                                                                  x=raw_data[i][2], z=raw_data[i][3],
-                                                                  angle=raw_data[i][4], mass=raw_data[i][5],
-                                                                  diam=raw_data[i][6], air_resistance=raw_data[i][7],
-                                                                  air_density=raw_data[i][8], gravity=raw_data[i][9]))
+                self.particle_list.append(
+                    self.ParticleSimulation(
+                        name=raw_data[i][0],
+                        u=raw_data[i][1],
+                        x=raw_data[i][2],
+                        z=raw_data[i][3],
+                        angle=raw_data[i][4],
+                        mass=raw_data[i][5],
+                        diam=raw_data[i][6],
+                        air_resistance=raw_data[i][7],
+                        air_density=raw_data[i][8],
+                        gravity=raw_data[i][9],
+                    )
+                )
             except Exception as error:
-                print('error with data line', i, ':', error)
+                print("error with data line", i, ":", error)
         return self.particle_list
 
     # initiate after load
@@ -129,7 +167,7 @@ class PyBrain:
         print(number)
         particle = self.particle_list[number]
 
-        v0 = ((int(particle.x)**2) * (int(particle.z)**2))**(1/2)
+        v0 = ((int(particle.x) ** 2) * (int(particle.z) ** 2)) ** (1 / 2)
         theta0 = particle.angle
         # starting coords
         x0 = 0
@@ -148,7 +186,7 @@ class PyBrain:
         v: int
         m = particle.mass
         g = particle.gravity
-        crossSection = np.pi * (int(particle.diam)/2)**2
+        crossSection = np.pi * (int(particle.diam) / 2) ** 2
         d = particle.air_density
         c = particle.air_resistance
         Cd = particle.drag_coeff
@@ -172,8 +210,8 @@ class PyBrain:
             v_z = u[3]
 
             speed = np.hypot(v_x, v_z)
-            a_x = ((-0.5 * Cd * d * crossSection)/m) * speed * v_x
-            a_z = ((-0.5 * Cd * d * crossSection)/m) * speed * v_z - g
+            a_x = ((-0.5 * Cd * d * crossSection) / m) * speed * v_x
+            a_z = ((-0.5 * Cd * d * crossSection) / m) * speed * v_z - g
             return (v_x, a_x, v_z, a_z)
 
         (t0, tf) = 0, 50
@@ -187,12 +225,17 @@ class PyBrain:
         def z_max(t, u):
             return u[3]
 
-       # `solve_ivp` is a function from the `scipy.integrate` module that solves initial value
-       # problems (IVPs) for systems of first-order ordinary differential equations (ODEs). In this
-       # case, it is being used to solve for the motion of a particle in the presence of air
-       # resistance and gravity.
-        solution = solve_ivp(speeds_calculation, (t0, tf),
-                             starting_values, dense_output=1, events=(hit_ground, z_max))
+        # `solve_ivp` is a function from the `scipy.integrate` module that solves initial value
+        # problems (IVPs) for systems of first-order ordinary differential equations (ODEs). In this
+        # case, it is being used to solve for the motion of a particle in the presence of air
+        # resistance and gravity.
+        solution = solve_ivp(
+            speeds_calculation,
+            (t0, tf),
+            starting_values,
+            dense_output=1,
+            events=(hit_ground, z_max),
+        )
         t = np.linspace(0, solution.t_events[0][0], 100)
 
         solution_for_t = solution.sol(t)
