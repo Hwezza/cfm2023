@@ -101,3 +101,57 @@ typically measured in kilograms per cubic meter (kg/m^3)
 data can be imported from a csv file with `import_data_from_path(path)`, however data must be presented as below:
 
 <img width="678" alt="Screenshot 2023-05-03 at 17 13 16" src="https://user-images.githubusercontent.com/34777353/235976596-b4ec07f6-d7e9-4172-b748-3ab6fb096560.png">
+
+
+
+## Method `calculateFor`
+
+This function calculates the motion of a particle in the presence of air resistance and gravity
+and returns the solution and solution for a given time.
+
+:param number: The parameter `number` is an integer representing the index of a particle in a list of particles. This particle will be used to calculate its motion in the presence of air resistance and gravity   
+:type number: int  
+:return: The function `calculateFor` returns two values: `solution`, which is the solution to the system of differential equations for the motion of a particle in the presence of air resistance and gravity, and `solution_for_t`, which is the solution to the system of differential equations
+for the motion of the particle at specific times `t`.
+
+```python
+result = self.mainBrain.calculateFor(myParticle)
+x = result[1][0]
+z = result[1][2]
+```
+
+
+The function updates the results of time in air, distance travelled, time to maximum height, and
+            maximum height.
+
+
+```python
+myParticle.updateResults(
+    dx=x[-1],
+    tx=result[0].t_events[0][0],
+    dz=max(z),
+    tz=result[0].t_events[1][0],
+)
+```
+The parameter `dx` is the distance travelled in the x-direction by the partcle   
+The parameter ``tx` is the time that the particle was in the air until the colision with the ground   
+The parameter `dz` is the maximum height achieved by the particle   
+The parameter `tz` is the time taken for the particle to hit the maximum height 
+
+
+##    Method `import_experiments`
+This function imports raw data and creates a list of ParticleSimulation objects based on the data.
+
+The `raw_data` parameter is a list of lists containing raw data for particle simulations that separates each simulation. Each inner list represents a single simulation and contains the following data in order: name, initial velocity
+(u), initial horizontal position (x), initial vertical position (z), launch angle (angle), mass,
+diameter, air resistance coefficient, air density
+:type raw_data: list
+:return: a list of ParticleSimulation objects.
+
+
+##   Method `openDataFromPath`
+This function opens a CSV file from a given path and imports it as a list of ParticleSimulation objects.
+
+The `path` parameter is a string that represents the file path of a CSV file containing data for particle simulations. The `openDataFromPath` method takes this path as input and returns a list of `ParticleSimulation` objects that are created from the data in the CSV file
+:return: A list of ParticleSimulation objects.
+
