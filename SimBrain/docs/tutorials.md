@@ -71,6 +71,4 @@ These can be outputted through,
     , round(myParticle.time_to_max, 4) , ","
     , round(myParticle.max_z, 4)
 )
-0.6912,,,0.6130
-
-
+0.6912 1.9227 0.2901 0.6130
