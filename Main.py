@@ -1,8 +1,9 @@
 # Main File
-import pyBrain.Brain as Brain
+from SimBrain import SimBrain
 from gui import guibrain
 
-pyBrain = Brain.mainBrain
+pyBrain = SimBrain()
+guibrain.mainBrain = pyBrain
 path = 'cfmTestSpreadsheet.csv'
 
 # startup

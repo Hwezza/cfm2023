@@ -2,7 +2,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 
-class PyBrain:
+class SimBrain:
     running = True
 
     def open_csv(self, path):
@@ -243,4 +243,4 @@ class PyBrain:
         return solution, solution_for_t
 
 
-mainBrain = PyBrain()
+mainBrain = SimBrain()

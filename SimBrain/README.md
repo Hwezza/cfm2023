@@ -30,6 +30,20 @@ Import Brain and create an instance of pybrain
 > pyBrain = Brain.mainBrain
 > ```
 
+## How to test
+
+Testing the code:
+
+```
+$ python Brain_Tests.py
+```
+
+Testing the Documentation:
+
+```
+$ python -m doctest README.md
+```
+
 ## Brief documentation:
 -----
 

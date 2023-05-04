@@ -2,13 +2,14 @@ import matplotlib as mtplt
 from matplotlib import pyplot
 import tkinter
 from tkinter import ttk
-from pyBrain.Brain import mainBrain
 
 
 # Main window
 
 
 class guibrain:
+    mainBrain = None
+
     program1_window: tkinter.Tk
     choiceWindow: tkinter.Tk
     main_window: tkinter.Tk
@@ -40,20 +41,16 @@ class guibrain:
         first_label.place(x=180, y=20)
         main_window.mainloop()
 
-    def show_data(number: int):
-        from pyBrain.Brain import mainBrain
-
-        selected_particle = mainBrain.particle_list[number]
+    def show_data(self, number: int):
+        selected_particle = self.mainBrain.particle_list[number]
         print(selected_particle)
 
     def write_experiments_to_tree(self):
-        from pyBrain.Brain import mainBrain
-
         print("Writting to tree:")
-        print(mainBrain.particle_list)
+        print(self.mainBrain.particle_list)
         self.tree.delete(*self.tree.get_children())
         i = 0
-        for experiment in mainBrain.particle_list:
+        for experiment in self.mainBrain.particle_list:
             print("experiment", i + 1, ":", experiment.name)
             self.tree.insert("", tkinter.END, values=(experiment.getData()), iid={i})
             i += 1
@@ -62,16 +59,15 @@ class guibrain:
 
     def selected_experiment(self):
         print("selection: ", self.tree.selection()[0])
-        from pyBrain.Brain import mainBrain
 
-        result = mainBrain.calculateFor(int(self.tree.selection()[0][1]))
+        result = self.mainBrain.calculateFor(int(self.tree.selection()[0][1]))
         x = result[1][0]
         z = result[1][2]
         print("graphing")
         mtplt.use("TkAgg")
         pyplot.plot(x, z)
         print("Update Results:")
-        mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(
+        self.mainBrain.particle_list[int(self.tree.selection()[0][1])].updateResults(
             dx=x[-1],
             tx=result[0].t_events[0][0],
             dz=max(z),
@@ -88,21 +84,18 @@ class guibrain:
         print("graph displayed")
 
     def write_tree_headings(self):
-        from pyBrain.Brain import mainBrain
-
-        raw_data = mainBrain.open_csv("cfmTestSpreadsheet.csv")
+        raw_data = self.mainBrain.open_csv("cfmTestSpreadsheet.csv")
         print(raw_data)
-
 
         columns = raw_data[0] + ["Time in air"] + ["Max Height"]
         print("columns =", columns)
 
         self.tree = ttk.Treeview(self.choiceWindow, columns=columns, show="headings")
-        i=0
+        i = 0
         for heading in columns:
-            print("HEADING: ",heading)
+            print("HEADING: ", heading)
             self.tree.heading(heading, text=str(heading))
-            i+=1
+            i += 1
             self.tree.column(heading, width=50)
         self.tree.column(raw_data[0][0], width=100)
 
@@ -113,7 +106,11 @@ class guibrain:
         self.choiceWindow.title("Particle Simulation")
         self.choiceWindow.geometry("800x450")
 
-        self.tree = ttk.Treeview(self.choiceWindow, columns=(mainBrain.open_csv("cfmTestSpreadsheet.csv")[0]), show= 'headings')
+        self.tree = ttk.Treeview(
+            self.choiceWindow,
+            columns=(self.mainBrain.open_csv("cfmTestSpreadsheet.csv")[0]),
+            show="headings",
+        )
 
         self.write_tree_headings()
         self.write_experiments_to_tree()
