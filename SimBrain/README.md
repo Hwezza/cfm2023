@@ -47,22 +47,13 @@ $ python -m doctest README.md
 ## Brief documentation:
 -----
 
-## Class pyBrain
+## Class SimBrain
 
 ``` python
-class PyBrain:
+>>>class SimBrain:
   ...
 ```
-
-This class is instanced automatically (upon importing Brain) as mainBrain and can be called as in the example below:
-
-``` python
-import pyBrain.Brain as Brain
-pyBrain = Brain.mainBrain
-
-# This can now be used as follows
-pyBrain.open_csv(somePath)
-```
+this is the main class of SimBrain
 
 ## Method `open_csv`
 This function opens a CSV file and returns its contents as a list of lists.
@@ -80,13 +71,26 @@ The ParticleSimulation class defines a simulation of a particles flight includin
 
 Every instance of the ParticleSimulation object has the following variables initialised on creation:
 
->params:
 
->name: string  
->u: float  
->x: float  
->z: float  
->angle: float  
+- :param name: A string representing the name of the object being modeled  
+- :type name: str  
+- :param u: initial velocity of the object  
+- :param x: x is a float parameter representing the initial horizontal distance of the
+projectile from the origin  
+- :param z: z is a float parameter that represents the initial height or altitude of the object
+being launched. It is measured in meters  
+- :param angle: The angle at which the object is launched or thrown, measured in degrees  
+- :param mass: The mass of the object in kilograms  
+:param diam: diam stands for diameter and is a parameter that represents the diameter of the
+object in meters  
+- :param air_resistance: Air resistance is the force that opposes the motion of an object
+through the air. In this context, it refers to the amount of resistance that the air exerts
+on the object as it moves through it.
+- :param air_density: The density of the air through which the object is moving. It is
+typically measured in kilograms per cubic meter (kg/m^3) 
+- :param gravity: The acceleration due to gravity, measured in meters per second squared
+(m/s^2). It is a constant force that pulls objects towards the center of the Earth  
+
 
 
 
