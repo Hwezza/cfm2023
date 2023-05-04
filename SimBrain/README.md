@@ -25,7 +25,7 @@
 Import Brain and create an instance of pybrain
 
 > From Main.py example program:
-> ``` python
+> ```python
 > import pyBrain.Brain as Brain
 > pyBrain = Brain.mainBrain
 > ```
@@ -50,7 +50,7 @@ $ python -m doctest README.md
 ## Class SimBrain
 
 ``` python
->>>class SimBrain:
+class SimBrain:
   ...
 ```
 this is the main class of SimBrain
@@ -79,7 +79,7 @@ Every instance of the ParticleSimulation object has the following variables init
 projectile from the origin  
 - :param z: z is a float parameter that represents the initial height or altitude of the object
 being launched. It is measured in meters  
-- :param angle: The angle at which the object is launched or thrown, measured in degrees  
+- :param angle: The angle at which the object is launched or thrown, measured in radians  
 - :param mass: The mass of the object in kilograms  
 :param diam: diam stands for diameter and is a parameter that represents the diameter of the
 object in meters  

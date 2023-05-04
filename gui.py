@@ -4,9 +4,6 @@ import tkinter
 from tkinter import ttk
 
 
-# Main window
-
-
 class guibrain:
     mainBrain = None
 
@@ -52,7 +49,8 @@ class guibrain:
         i = 0
         for experiment in self.mainBrain.particle_list:
             print("experiment", i + 1, ":", experiment.name)
-            self.tree.insert("", tkinter.END, values=(experiment.getData()), iid={i})
+            self.tree.insert("", tkinter.END, values=(
+                experiment.getData()), iid={i})
             i += 1
 
     # click
@@ -79,7 +77,6 @@ class guibrain:
         pyplot.xlabel("Distance (m)")
         pyplot.ylabel("Height (m)")
         pyplot.title("Particle Graph")
-
         pyplot.show()
         print("graph displayed")
 
@@ -90,7 +87,8 @@ class guibrain:
         columns = raw_data[0] + ["Time in air"] + ["Max Height"]
         print("columns =", columns)
 
-        self.tree = ttk.Treeview(self.choiceWindow, columns=columns, show="headings")
+        self.tree = ttk.Treeview(
+            self.choiceWindow, columns=columns, show="headings")
         i = 0
         for heading in columns:
             print("HEADING: ", heading)
