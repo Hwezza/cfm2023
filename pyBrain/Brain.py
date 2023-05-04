@@ -26,8 +26,8 @@ class PyBrain:
 
         return data
 
-    # The ParticleSimulation class defines variables and methods for simulating the motion of a
-    # particle with given initial conditions and air resistance.
+    # The `ParticleSimulation` class defines a simulation of a particle's flight, including its
+    # initial conditions, physical properties, and methods for updating and retrieving results.
     class ParticleSimulation:
         # Establish Variables
         drag_coeff = 0.47
