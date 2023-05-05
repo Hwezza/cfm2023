@@ -152,6 +152,16 @@ diameter, air resistance coefficient, air density
 :type raw_data: list
 :return: a list of ParticleSimulation objects.
 
+For example:
+
+```python
+
+>>> myBrain.import_experiments(".docs/template.csv")
+>>> print(myBrain.particlelist[0].name)
+Example1
+
+```
+
 
 ##   Method `openDataFromPath`
 This function opens a CSV file from a given path and imports it as a list of ParticleSimulation objects.
