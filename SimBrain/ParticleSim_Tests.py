@@ -55,5 +55,6 @@ class BrainTestCase(unittest.TestCase):
         )
         print(x[-1], result[0].t_events[0][0],max(z),result[0].t_events[1][0])
 
-our_test = BrainTestCase()
-our_test.test_example()
+if __name__ == "__main__":
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(BrainTestCase)
+    unittest.TextTestRunner().run(suite)

@@ -25,26 +25,34 @@
 Import Brain and create an instance of pybrain
 
 > From Main.py example program:
+>
 > ```python
-> import pyBrain.Brain as Brain
-> pyBrain = Brain.mainBrain
+>
+> from SimBrain import SimBrain
+> myBrain = SimBrain()
+>
 > ```
 
 ## How to test
 
 Testing the code:
 
-```
-$ python Brain_Tests.py
+```cmd
+
+$python Brain_Tests.py
+
 ```
 
 Testing the Documentation:
 
-```
-$ python -m doctest README.md
+```cmd
+
+$python -m doctest README.md
+
 ```
 
 ## Brief documentation:
+
 -----
 
 ## Class SimBrain
@@ -89,11 +97,7 @@ on the object as it moves through it.
 - :param air_density: The density of the air through which the object is moving. It is
 typically measured in kilograms per cubic meter (kg/m^3) 
 - :param gravity: The acceleration due to gravity, measured in meters per second squared
-(m/s^2). It is a constant force that pulls objects towards the center of the Earth  
-
-
-
-
+(m/s^2). It is a constant force that pulls objects towards the center of the planet  
 
 
 ## Method `import_data_from_path`
@@ -101,3 +105,13 @@ typically measured in kilograms per cubic meter (kg/m^3)
 data can be imported from a csv file with `import_data_from_path(path)`, however data must be presented as below:
 
 <img width="678" alt="Screenshot 2023-05-03 at 17 13 16" src="https://user-images.githubusercontent.com/34777353/235976596-b4ec07f6-d7e9-4172-b748-3ab6fb096560.png">
+
+For example:
+
+```python
+
+>>> myBrain.import_experiments(".docs/template.csv")
+>>> print(myBrain.particlelist[0].name)
+Example1
+
+```
