@@ -10,3 +10,4 @@
 ## Please find the primary README.md under SimBrain
 
 -----
+<https://github.com/Hwezza/cfm2023/blob/main/SimBrain/README.md#group-project---computing-for-mathematics>
