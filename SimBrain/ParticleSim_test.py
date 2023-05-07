@@ -1,4 +1,4 @@
-from ParticleSim import SimBrain as Brain
+from SimBrain import SimBrain as Brain
 import unittest
 
 
