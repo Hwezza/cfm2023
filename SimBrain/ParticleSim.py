@@ -57,7 +57,7 @@ class SimBrain:
             self.air_density = float(air_density)
             self.gravity = float(gravity)
 
-        def updateResults(self, tx, dx, dz, tz):
+        def updateResults(self, tx, dx, dz, tz): # tested
             """
             The function updates the results of time in air, distance travelled, time to maximum height, and
             maximum height.
@@ -76,7 +76,7 @@ class SimBrain:
                 dz,
             )
 
-        def getData(self) -> list:
+        def getData(self) -> list: # tested
             """
             The function `getData` returns a list of attributes for an object.
             :return: A list containing the values of various attributes of an object, including its name,
@@ -95,12 +95,14 @@ class SimBrain:
                 self.air_density,
                 self.gravity,
                 self.time_in_air,
+                self.dist_travelled,
+                self.time_to_max,
                 self.max_z,
             ]
 
     particle_list: list[ParticleSimulation] = []
 
-    def import_experiments(self, raw_data: list) -> list[ParticleSimulation]:
+    def import_experiments(self, raw_data: list) -> list[ParticleSimulation]: # tested
         """
         This function imports raw data and creates a list of ParticleSimulation objects based on the
         data.
@@ -113,7 +115,6 @@ class SimBrain:
         :return: a list of ParticleSimulation objects.
         """
         raw_data = raw_data
-        print("Raw DATA:", raw_data)
         for i in range(1, len(raw_data)):
             try:
                 self.particle_list.append(
@@ -135,7 +136,7 @@ class SimBrain:
         return self.particle_list
 
     # initiate after load
-    def openDataFromPath(self, path) -> list[ParticleSimulation]:
+    def openDataFromPath(self, path) -> list[ParticleSimulation]: # tested
         """
         This function opens a CSV file from a given path and imports it as a list of ParticleSimulation
         objects.
@@ -148,7 +149,7 @@ class SimBrain:
         return self.import_experiments(self.open_csv(path))
 
     # import calculations:
-    def calculateFor(self, number: int):
+    def calculateFor(self, number: int): # tested
         """
         This function calculates the motion of a particle in the presence of air resistance and gravity
         and returns the solution and solution for a given time.
@@ -163,8 +164,6 @@ class SimBrain:
         for the motion of the particle at specific times `t`.
         """
         results = []
-        print(self.particle_list)
-        print(number)
         particle = self.particle_list[number]
 
         v0 = ((int(particle.x) ** 2) * (int(particle.z) ** 2)) ** (1 / 2)
@@ -239,7 +238,6 @@ class SimBrain:
         t = np.linspace(0, solution.t_events[0][0], 100)
 
         solution_for_t = solution.sol(t)
-        print("Returned SOLUTION :", solution_for_t)
         return solution, solution_for_t
 
 

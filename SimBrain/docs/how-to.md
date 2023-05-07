@@ -33,3 +33,11 @@ Alternatively, we could import our data from a csv file (look at the template fo
 >>> print(myBrain.particlelist[0].name) # this will take the first particle imported
 Our_Particle
 ```
+
+Next we can use this to calculate the object's travel:
+```python
+>>> result = myBrain.calculateFor(0)
+>>> x = result[1][0]
+>>> z = result[1][2]
+>>> print("max height:", max(z))
+max height: 

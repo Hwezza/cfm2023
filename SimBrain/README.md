@@ -39,7 +39,7 @@ Testing the code:
 
 ```cmd
 
-$python Brain_Tests.py
+$python ParticleSim_Tests.py
 
 ```
 
@@ -61,7 +61,7 @@ $python -m doctest README.md
 class SimBrain:
   ...
 ```
-this is the main class of SimBrain
+This is the main class of SimBrain an instance can be created
 
 ## Method `open_csv`
 This function opens a CSV file and returns its contents as a list of lists.
