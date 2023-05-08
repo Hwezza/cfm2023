@@ -9,13 +9,6 @@ Find the CFM presentation at
 > Submission: 2023  
 > Group: The Limit Does Not Exist
 
-## Contents
-
-- <a href="https://github.com/Hwezza/cfm2023/edit/main/README.md#authors">Authors</a>
-- <a href="https://github.com/Hwezza/cfm2023/edit/main/README.md#how-to-use">How to use</a>
-- <a href="https://github.com/Hwezza/cfm2023/edit/main/README.md#full-documentation">Full Documentation</a>
-  - <a href = "https://github.com/Hwezza/cfm2023/edit/main/README.md#Class-Pybrain">Class pyBrain</a>
-
 ### Authors
 
 - Harrison Wescott
