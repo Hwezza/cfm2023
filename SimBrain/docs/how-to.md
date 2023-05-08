@@ -4,8 +4,8 @@
 
 ```python
 
->>> from SimBrain import SimBrain
->>> myBrain = SimBrain()
+>>> from SimBrain import ParticleSim
+>>> myBrain = ParticleSim.SimBrain()
 
 ```
 

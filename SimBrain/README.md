@@ -16,6 +16,13 @@ Find the CFM presentation at
 - Calvin Pannokaran
 - Toby Soden
 
+### Documentation guide
+
+This readme has the basic outline of using this library
+Under docs, you can find *tutorials*, *references*, a deeper dive into *explanations*, some *examples* as well as a *how-to*.
+
+There is also a two page essay under docs
+
 ## How to use
 
 Import Brain and create an instance of pybrain
@@ -24,7 +31,7 @@ Import Brain and create an instance of pybrain
 >
 ```python
 
->>> from SimBrain import SimBrain
+>>> from ParticleSim import SimBrain
 >>> myBrain = SimBrain()
 
 ```
@@ -145,14 +152,14 @@ and returns the solution and solution for a given time.
 for the motion of the particle at specific times `t`.
 
 ```python
->>> from SimBrain import SimBrain
+>>> from ParticleSim import SimBrain
 >>> test_brain = SimBrain()
 >>> test_brain.particleList = []
 >>> result = test_brain.calculateFor(0)
 >>> x = result[1][0]
 >>> z = result[1][2]
 >>> print("max z =", max(z))
-max z = 0.030960751744567642
+max z = 0.03096075174456763
 
 ```
 
